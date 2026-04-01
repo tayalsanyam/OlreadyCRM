@@ -1,0 +1,36 @@
+{
+  "name": "olready-crm",
+  "version": "0.2.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "setup": "node scripts/setup-sheets.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.95.3",
+    "bcryptjs": "^2.4.3",
+    "date-fns": "^4.1.0",
+    "googleapis": "^144.0.0",
+    "iron-session": "^8.0.4",
+    "next": "14.2.18",
+    "node-cron": "^4.2.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "swr": "^2.2.5",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5"
+  }
+}

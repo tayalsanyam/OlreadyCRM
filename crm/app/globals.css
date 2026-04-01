@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --border: #334155;
+  --muted: #64748b;
+  --accent: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --success: #22c55e;
+  --warning: #f59e0b;
+}
+
+body {
+  background: var(--bg);
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+  }
+  .btn-primary {
+    @apply btn bg-sky-500 text-white hover:bg-sky-600 focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-slate-900;
+  }
+  .btn-secondary {
+    @apply btn bg-slate-600 text-slate-200 hover:bg-slate-500;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-slate-700;
+  }
+  .card {
+    @apply bg-slate-800/80 border border-slate-700 rounded-xl p-5 shadow-lg;
+  }
+  .input {
+    @apply w-full px-3 py-2 rounded-lg bg-slate-800/90 border border-slate-600 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded text-xs font-medium;
+  }
+}

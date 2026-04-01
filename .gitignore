@@ -1,0 +1,29 @@
+.DS_Store
+.cursor/
+
+# Env & secrets (use Vercel env vars in production)
+.env
+.env.*
+!.env.example
+
+# Google / local credential files — never commit
+**/olready-crm-*.json
+*service-account*.json
+*credentials*.json
+
+# Local / bulky data
+*.xlsx
+*.xls
+backups/
+
+# Full duplicate tree (huge; not needed for deploy)
+olready Excel CRM/
+
+# Dependencies & build output
+node_modules/
+.next/
+out/
+dist/
+*.log
+supabase-dump
+*.tsbuildinfo

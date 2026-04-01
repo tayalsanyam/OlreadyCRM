@@ -1,0 +1,6 @@
+name,city,company,email,phone,insta_id,bdm,plan,status,remarks,connected_on,next_follow_up,committed_date,original_price,discount,amount_paid,payment_status,payment_mode
+Rahul Kumar,Mumbai,TechCorp,rahul@example.com,9876543210,,GAURAV,Prime 7k,UNTOUCHED,Cold call lead,,,,,,,PENDING,
+Priya Sharma,Delhi,DesignCo,priya@design.com,9123456789,,GURKIRAN,Pro 14k,CONTACTED,Interested in Pro plan,2026-02-10,2026-02-15,,,,PENDING,
+Amit Patel,Bangalore,,,8765432109,,GAURAV,,FOLLOW UP/DETAILS SHARED,Sent proposal,2026-02-08,2026-02-12,2026-02-20,14000,2000,,PENDING,
+Sneha Reddy,Hyderabad,StartUpX,sneha@startup.com,7654321098,,GURKIRAN,Phoenix 18k,CONFIRMED,Ready to pay,2026-02-05,2026-02-14,2026-02-18,18000,3000,5000,PARTIAL,UPI
+Vikram Singh,Chennai,,vikram@test.com,6543210987,,GAURAV,Prime 7k,PAID,Full payment done,2026-02-01,,,2026-02-01,7000,0,7000,COMPLETE,Bank Transfer
