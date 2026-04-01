@@ -1,16 +1,25 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const PUBLIC = ["/login", "/api/auth/login", "/api/auth/me", "/api/setup", "/api/setup/check"];
+/** Page routes only — `/api/*` is excluded in `matcher` (auth lives in API routes). */
+const PUBLIC_PREFIXES = ["/login"];
 
 export function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname;
-  if (PUBLIC.some((p) => path.startsWith(p))) return NextResponse.next();
-  const cookie = request.cookies.get("olready_session")?.value;
-  if (!cookie && !path.startsWith("/api/")) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  try {
+    const path = request.nextUrl.pathname;
+    if (PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`))) {
+      return NextResponse.next();
+    }
+    const cookie = request.cookies.get("olready_session")?.value;
+    if (!cookie) {
+      return NextResponse.redirect(new URL("/login", request.nextUrl.origin));
+    }
+    return NextResponse.next();
+  } catch {
+    return NextResponse.next();
   }
-  return NextResponse.next();
 }
 
-export const config = { matcher: ["/((?!_next|favicon).*)"] };
+export const config = {
+  matcher: ["/", "/((?!api/|_next/|favicon\\.ico|.*\\..*).+)"],
+};
