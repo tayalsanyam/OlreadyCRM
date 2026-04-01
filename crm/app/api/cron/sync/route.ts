@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
 import path from "path";
+import { sendDigests } from "@/lib/digest";
 
 /**
  * Hourly sync: Supabase → Google Sheets (backup).
@@ -27,7 +28,33 @@ export async function GET(request: NextRequest) {
     child.stderr?.on("data", (d) => { stderr += d.toString(); });
     child.on("close", (code) => {
       if (code === 0) {
-        resolve(NextResponse.json({ ok: true, message: "Sync complete" }));
+        // Single Vercel Hobby cron: run digest on the 11:00 UTC hourly tick (schedule is :00).
+        const runDigest = new Date().getUTCHours() === 11;
+        if (!runDigest) {
+          resolve(NextResponse.json({ ok: true, message: "Sync complete" }));
+          return;
+        }
+        void (async () => {
+          try {
+            const { sent, errors } = await sendDigests();
+            resolve(
+              NextResponse.json({
+                ok: true,
+                message: "Sync complete",
+                digest: { sent, errors },
+              })
+            );
+          } catch (e) {
+            const err = e instanceof Error ? e.message : String(e);
+            resolve(
+              NextResponse.json({
+                ok: true,
+                message: "Sync complete",
+                digest: { error: err },
+              })
+            );
+          }
+        })();
       } else {
         resolve(
           NextResponse.json(
