@@ -24,6 +24,18 @@ npm run dev
 
 5. **Visit** http://localhost:3000/login – if no admin exists, create one.
 
+## Deploy (Vercel)
+
+**Recommended:** In the Vercel project go to **Settings → General**:
+
+- **Root Directory:** `crm` (important: the Next app lives here, not the repo root)
+- **Framework Preset:** Next.js
+- **Build / Output:** leave defaults — do **not** set *Output Directory* to `public` (that mode is for static sites; Next.js uses `.next`)
+
+If *Root Directory* is wrong, the build may finish but deployment fails looking for a `public` output folder.
+
+This repo also includes a root `vercel.json` with `cd crm && …` so deploys that use the **repository root** as the project root still build as Next.js.
+
 ## Features
 
 - Login, Dashboard, Leads, Pipeline, Payment Pending, Tasks, Calendar, Reports, BDM Log, Activity Log, Admin
