@@ -3,9 +3,10 @@ import { spawn } from "child_process";
 import path from "path";
 
 /**
- * Hourly sync: Supabase → Google Sheets (backup).
+ * Daily sync: Supabase → Google Sheets (backup).
+ * Vercel Hobby: once/day at 00:30 UTC (= 6:00 AM IST, Asia/Kolkata).
  * Call with CRON_SECRET header for auth.
- * Also triggered by in-process cron when server runs persistently.
+ * Also triggered by in-process cron when `next dev` runs with instrumentation.
  */
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization") || request.headers.get("x-cron-secret");

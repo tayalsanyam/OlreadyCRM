@@ -1,5 +1,5 @@
 /**
- * Hourly sync + daily digest - runs only in Node.js runtime.
+ * Local dev crons (Node only) — production uses vercel.json once/day for Sheets sync.
  * Loaded by instrumentation.ts when NEXT_RUNTIME === "nodejs".
  */
 const cron = require("node-cron");
@@ -16,8 +16,8 @@ const runSync = () => {
   child.on("error", (err: Error) => console.error("[cron/sync]", err.message));
 };
 
-cron.schedule("0 * * * *", runSync, { timezone: "Asia/Kolkata" });
-console.log("[cron] Hourly sync scheduled (Supabase → Sheets)");
+cron.schedule("0 6 * * *", runSync, { timezone: "Asia/Kolkata" });
+console.log("[cron] Daily sync 6:00 AM IST (Supabase → Sheets)");
 
 // Daily digest: 11 AM IST. If server starts after 11 AM, run immediately (whichever first each day).
 const runDigest = async () => {
