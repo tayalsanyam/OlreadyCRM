@@ -34,7 +34,7 @@ npm run dev
 
 If *Root Directory* is wrong, the build may finish but deployment fails looking for a `public` output folder.
 
-This repo also includes a root `vercel.json` with `cd crm && …` so deploys that use the **repository root** as the project root still build as Next.js.
+The repo root has a `package.json` (npm **workspaces**) + root `vercel.json`, so Vercel can use **repository root** as the project root: it sees `next` in the root `package.json`, runs `npm install`, then `npm run build` (builds the `crm` workspace). You can still set **Root Directory** to `crm` instead and ignore the root `package.json` if you prefer.
 
 ## Features
 

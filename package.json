@@ -1,0 +1,17 @@
+{
+  "name": "olready-crm-repo",
+  "private": true,
+  "workspaces": ["crm"],
+  "dependencies": {
+    "next": "14.2.35"
+  },
+  "scripts": {
+    "build": "npm run build -w olready-crm",
+    "dev": "npm run dev -w olready-crm",
+    "start": "npm run start -w olready-crm",
+    "lint": "npm run lint -w olready-crm"
+  },
+  "engines": {
+    "node": ">=18.18.0"
+  }
+}

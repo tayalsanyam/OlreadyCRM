@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import { fetcher } from "@/lib/fetcher";
@@ -118,7 +118,9 @@ export default function PipelinePage() {
                   <Link
                     href={`/leads/${l.id}`}
                     className="block"
-                    onClick={(e) => dragging && e.preventDefault()}
+                    onClick={(e: MouseEvent<HTMLAnchorElement>) => {
+                      if (dragging) e.preventDefault();
+                    }}
                   >
                     <p className="font-medium text-white">{l.name}</p>
                     <p className="text-xs text-slate-400">{l.bdm} · {l.plan}</p>
