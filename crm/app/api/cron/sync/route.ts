@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { spawn } from "child_process";
 import path from "path";
+import { sendDigests } from "@/lib/digest";
 
 /**
- * Daily sync: Supabase → Google Sheets (backup).
- * Vercel Hobby: once/day at 00:30 UTC (= 6:00 AM IST, Asia/Kolkata).
+ * Daily job (one Vercel cron): Supabase → Google Sheets, then daily email digest.
+ * Schedule: 00:30 UTC (= 6:00 AM IST) in vercel.json.
  * Call with CRON_SECRET header for auth.
- * Also triggered by in-process cron when `next dev` runs with instrumentation.
+ * Local: instrumentation-node.ts runs the same sequence at 6 AM IST.
  */
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization") || request.headers.get("x-cron-secret");
@@ -24,19 +25,43 @@ export async function GET(request: NextRequest) {
     });
     let stdout = "";
     let stderr = "";
-    child.stdout?.on("data", (d) => { stdout += d.toString(); });
-    child.stderr?.on("data", (d) => { stderr += d.toString(); });
+    child.stdout?.on("data", (d) => {
+      stdout += d.toString();
+    });
+    child.stderr?.on("data", (d) => {
+      stderr += d.toString();
+    });
     child.on("close", (code) => {
-      if (code === 0) {
-        resolve(NextResponse.json({ ok: true, message: "Sync complete" }));
-      } else {
+      if (code !== 0) {
         resolve(
           NextResponse.json(
             { ok: false, error: stderr || stdout || `Exit ${code}` },
             { status: 500 }
           )
         );
+        return;
       }
+      void (async () => {
+        try {
+          const { sent, errors } = await sendDigests();
+          resolve(
+            NextResponse.json({
+              ok: true,
+              message: "Sync complete",
+              digest: { sent, errors },
+            })
+          );
+        } catch (e) {
+          const err = e instanceof Error ? e.message : String(e);
+          resolve(
+            NextResponse.json({
+              ok: true,
+              message: "Sync complete",
+              digest: { error: err },
+            })
+          );
+        }
+      })();
     });
     child.on("error", (err) => {
       resolve(

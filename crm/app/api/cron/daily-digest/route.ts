@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendDigests } from "@/lib/digest";
 
 /**
- * Daily digest: Role-based emails (BDM=their tasks, TL=team, Admin=all by BDM).
- * Fallback: DAILY_DIGEST_EMAILS gets admin-style digest if no users have email.
- *
- * Not scheduled on Vercel by default — call manually or wire a second cron / external
- * scheduler when you want this as a product feature. Use CRON_SECRET for auth.
+ * Daily digest only (no Sheets sync). Production normally sends digest from
+ * `/api/cron/sync` after the daily backup. Use this route for manual runs or testing.
+ * Use CRON_SECRET for auth.
  */
 export async function GET(request: NextRequest) {
   const auth = request.headers.get("authorization") || request.headers.get("x-cron-secret");
