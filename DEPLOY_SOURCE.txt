@@ -1,0 +1,4 @@
+Generated 2026-07-03T16:55:06.300Z
+From: /Users/sanyamtayal/Desktop/Olready Backend
+Command: npm run deploy:prepare
+Do not edit — regenerate from source.

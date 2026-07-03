@@ -1,0 +1,347 @@
+City,State,Region
+Port Blair,Andaman and Nicobar Islands,South
+Anantapur,Andhra Pradesh,South
+Chittoor,Andhra Pradesh,South
+Eluru,Andhra Pradesh,South
+Guntur,Andhra Pradesh,South
+Hindupur,Andhra Pradesh,South
+Kadapa,Andhra Pradesh,South
+Kakinada,Andhra Pradesh,South
+Kurnool,Andhra Pradesh,South
+Machilipatnam,Andhra Pradesh,South
+Nellore,Andhra Pradesh,South
+Ongole,Andhra Pradesh,South
+Rajahmundry,Andhra Pradesh,South
+Srikakulam,Andhra Pradesh,South
+Tirupati,Andhra Pradesh,South
+Vijayawada,Andhra Pradesh,South
+Visakhapatnam,Andhra Pradesh,South
+Vizianagaram,Andhra Pradesh,South
+Itanagar,Arunachal Pradesh,East
+Naharlagun,Arunachal Pradesh,East
+Pasighat,Arunachal Pradesh,East
+Tawang,Arunachal Pradesh,East
+Ziro,Arunachal Pradesh,East
+Barpeta,Assam,East
+Bongaigaon,Assam,East
+Dhubri,Assam,East
+Dibrugarh,Assam,East
+Guwahati,Assam,East
+Jorhat,Assam,East
+Nagaon,Assam,East
+Silapathar,Assam,East
+Silchar,Assam,East
+Tezpur,Assam,East
+Tinsukia,Assam,East
+Arrah,Bihar,East
+Baxar,Bihar,East
+Begusarai,Bihar,East
+Bhagalpur,Bihar,East
+Bihar Sharif,Bihar,East
+Chhapra,Bihar,East
+Darbhanga,Bihar,East
+Gaya,Bihar,East
+Katihar,Bihar,East
+Kishanganj,Bihar,East
+Motihari,Bihar,East
+Munger,Bihar,East
+Muzaffarpur,Bihar,East
+Patna,Bihar,East
+Purnia,Bihar,East
+Samastipur,Bihar,East
+Sasaram,Bihar,East
+Siwan,Bihar,East
+Chandigarh,Chandigarh,North
+Ambikapur,Chhattisgarh,East
+Bhilai,Chhattisgarh,East
+Bilaspur,Chhattisgarh,East
+Dhamtari,Chhattisgarh,East
+Durg,Chhattisgarh,East
+Jagdalpur,Chhattisgarh,East
+Korba,Chhattisgarh,East
+Raigarh,Chhattisgarh,East
+Raipur,Chhattisgarh,East
+Rajnandgaon,Chhattisgarh,East
+Daman,Dadra and Nagar Haveli and Daman and Diu,West
+Silvassa,Dadra and Nagar Haveli and Daman and Diu,West
+Delhi,Delhi,North
+Mapusa,Goa,West
+Margao,Goa,West
+Panaji,Goa,West
+Vasco da Gama,Goa,West
+Ahmedabad,Gujarat,West
+Anand,Gujarat,West
+Bharuch,Gujarat,West
+Bhavnagar,Gujarat,West
+Bhuj,Gujarat,West
+Gandhidham,Gujarat,West
+Gandhinagar,Gujarat,West
+Jamnagar,Gujarat,West
+Junagadh,Gujarat,West
+Mehsana,Gujarat,West
+Morbi,Gujarat,West
+Navsari,Gujarat,West
+Patan,Gujarat,West
+Porbandar,Gujarat,West
+Rajkot,Gujarat,West
+Surat,Gujarat,West
+Surendranagar,Gujarat,West
+Vadodara,Gujarat,West
+Valsad,Gujarat,West
+Vapi,Gujarat,West
+Ambala,Haryana,North
+Bahadurgarh,Haryana,North
+Faridabad,Haryana,North
+Gurugram,Haryana,North
+Hisar,Haryana,North
+Jind,Haryana,North
+Karnal,Haryana,North
+Panchkula,Haryana,North
+Panipat,Haryana,North
+Rohtak,Haryana,North
+Sirsa,Haryana,North
+Sonipat,Haryana,North
+Thanesar,Haryana,North
+Yamunanagar,Haryana,North
+Chamba,Himachal Pradesh,North
+Dharamshala,Himachal Pradesh,North
+Hamirpur,Himachal Pradesh,North
+Kullu,Himachal Pradesh,North
+Mandi,Himachal Pradesh,North
+Shimla,Himachal Pradesh,North
+Solan,Himachal Pradesh,North
+Una,Himachal Pradesh,North
+Anantnag,Jammu and Kashmir,North
+Baramulla,Jammu and Kashmir,North
+Jammu,Jammu and Kashmir,North
+Kathua,Jammu and Kashmir,North
+Srinagar,Jammu and Kashmir,North
+Udhampur,Jammu and Kashmir,North
+Bokaro Steel City,Jharkhand,East
+Deoghar,Jharkhand,East
+Dhanbad,Jharkhand,East
+Giridih,Jharkhand,East
+Hazaribagh,Jharkhand,East
+Jamshedpur,Jharkhand,East
+Medininagar (Daltonganj),Jharkhand,East
+Phusro,Jharkhand,East
+Ramgarh,Jharkhand,East
+Ranchi,Jharkhand,East
+Ballari,Karnataka,South
+Belagavi,Karnataka,South
+Bengaluru,Karnataka,South
+Bidar,Karnataka,South
+Chikkamagaluru,Karnataka,South
+Chitradurga,Karnataka,South
+Davanagere,Karnataka,South
+Hassan,Karnataka,South
+Hosapete,Karnataka,South
+Hubballi-Dharwad,Karnataka,South
+Kalaburagi,Karnataka,South
+Kolar,Karnataka,South
+Mandya,Karnataka,South
+Mangaluru,Karnataka,South
+Mysuru,Karnataka,South
+Shivamogga,Karnataka,South
+Tumakuru,Karnataka,South
+Udupi,Karnataka,South
+Vijayapura,Karnataka,South
+Alappuzha,Kerala,South
+Idukki (Painavu),Kerala,South
+Kannur,Kerala,South
+Kasaragod,Kerala,South
+Kochi,Kerala,South
+Kollam,Kerala,South
+Kottayam,Kerala,South
+Kozhikode,Kerala,South
+Malappuram,Kerala,South
+Palakkad,Kerala,South
+Pathanamthitta,Kerala,South
+Thiruvananthapuram,Kerala,South
+Thrissur,Kerala,South
+Wayanad (Kalpetta),Kerala,South
+Kargil,Ladakh,North
+Leh,Ladakh,North
+Kavaratti,Lakshadweep,South
+Bhind,Madhya Pradesh,West
+Bhopal,Madhya Pradesh,West
+Chhatarpur,Madhya Pradesh,West
+Chhindwara,Madhya Pradesh,West
+Dewas,Madhya Pradesh,West
+Guna,Madhya Pradesh,West
+Gwalior,Madhya Pradesh,West
+Indore,Madhya Pradesh,West
+Jabalpur,Madhya Pradesh,West
+Khargone,Madhya Pradesh,West
+Mandsaur,Madhya Pradesh,West
+Morena,Madhya Pradesh,West
+Ratlam,Madhya Pradesh,West
+Rewa,Madhya Pradesh,West
+Sagar,Madhya Pradesh,West
+Satna,Madhya Pradesh,West
+Shivpuri,Madhya Pradesh,West
+Ujjain,Madhya Pradesh,West
+Vidisha,Madhya Pradesh,West
+Ahmednagar,Maharashtra,West
+Akola,Maharashtra,West
+Amravati,Maharashtra,West
+Aurangabad (Chhatrapati Sambhajinagar),Maharashtra,West
+Beed,Maharashtra,West
+Bhiwandi,Maharashtra,West
+Chandrapur,Maharashtra,West
+Dhule,Maharashtra,West
+Gondia,Maharashtra,West
+Ichalkaranji,Maharashtra,West
+Jalgaon,Maharashtra,West
+Jalna,Maharashtra,West
+Kalyan-Dombivli,Maharashtra,West
+Kolhapur,Maharashtra,West
+Latur,Maharashtra,West
+Mira-Bhayandar,Maharashtra,West
+Mumbai,Maharashtra,West
+Nagpur,Maharashtra,West
+Nanded,Maharashtra,West
+Nashik,Maharashtra,West
+Navi Mumbai,Maharashtra,West
+Parbhani,Maharashtra,West
+Pimpri-Chinchwad,Maharashtra,West
+Pune,Maharashtra,West
+Sangli,Maharashtra,West
+Satara,Maharashtra,West
+Solapur,Maharashtra,West
+Thane,Maharashtra,West
+Vasai-Virar,Maharashtra,West
+Yavatmal,Maharashtra,West
+Imphal,Manipur,East
+Shillong,Meghalaya,East
+Tura,Meghalaya,East
+Aizawl,Mizoram,East
+Dimapur,Nagaland,East
+Kohima,Nagaland,East
+Balangir,Odisha,East
+Balasore,Odisha,East
+Baripada,Odisha,East
+Berhampur,Odisha,East
+Bhadrak,Odisha,East
+Bhubaneswar,Odisha,East
+Cuttack,Odisha,East
+Jharsuguda,Odisha,East
+Puri,Odisha,East
+Rourkela,Odisha,East
+Sambalpur,Odisha,East
+Puducherry,Puducherry,South
+Amritsar,Punjab,North
+Barnala,Punjab,North
+Bathinda,Punjab,North
+Firozpur,Punjab,North
+Hoshiarpur,Punjab,North
+Jalandhar,Punjab,North
+Kapurthala,Punjab,North
+Khanna,Punjab,North
+Ludhiana,Punjab,North
+Mohali,Punjab,North
+Muktsar,Punjab,North
+Pathankot,Punjab,North
+Patiala,Punjab,North
+Ajmer,Rajasthan,West
+Alwar,Rajasthan,West
+Barmer,Rajasthan,West
+Beawar,Rajasthan,West
+Bharatpur,Rajasthan,West
+Bhilwara,Rajasthan,West
+Bikaner,Rajasthan,West
+Churu,Rajasthan,West
+Dholpur,Rajasthan,West
+Jaipur,Rajasthan,West
+Jodhpur,Rajasthan,West
+Kota,Rajasthan,West
+Pali,Rajasthan,West
+Sikar,Rajasthan,West
+Sri Ganganagar,Rajasthan,West
+Tonk,Rajasthan,West
+Udaipur,Rajasthan,West
+Gangtok,Sikkim,East
+Ambur,Tamil Nadu,South
+Chennai,Tamil Nadu,South
+Coimbatore,Tamil Nadu,South
+Cuddalore,Tamil Nadu,South
+Dindigul,Tamil Nadu,South
+Erode,Tamil Nadu,South
+Hosur,Tamil Nadu,South
+Kanchipuram,Tamil Nadu,South
+Karur,Tamil Nadu,South
+Kumbakonam,Tamil Nadu,South
+Madurai,Tamil Nadu,South
+Nagercoil,Tamil Nadu,South
+Pudukkottai,Tamil Nadu,South
+Salem,Tamil Nadu,South
+Thanjavur,Tamil Nadu,South
+Thoothukudi,Tamil Nadu,South
+Tiruchirappalli,Tamil Nadu,South
+Tirunelveli,Tamil Nadu,South
+Tiruppur,Tamil Nadu,South
+Vellore,Tamil Nadu,South
+Adilabad,Telangana,South
+Hyderabad,Telangana,South
+Karimnagar,Telangana,South
+Khammam,Telangana,South
+Mahbubnagar,Telangana,South
+Miryalaguda,Telangana,South
+Nalgonda,Telangana,South
+Nizamabad,Telangana,South
+Ramagundam,Telangana,South
+Suryapet,Telangana,South
+Warangal,Telangana,South
+Agartala,Tripura,East
+Agra,Uttar Pradesh,North
+Aligarh,Uttar Pradesh,North
+Amroha,Uttar Pradesh,North
+Ayodhya,Uttar Pradesh,North
+Bareilly,Uttar Pradesh,North
+Bulandshahr,Uttar Pradesh,North
+Etawah,Uttar Pradesh,North
+Fatehpur,Uttar Pradesh,North
+Firozabad,Uttar Pradesh,North
+Ghaziabad,Uttar Pradesh,North
+Gorakhpur,Uttar Pradesh,North
+Hapur,Uttar Pradesh,North
+Hardoi,Uttar Pradesh,North
+Jaunpur,Uttar Pradesh,North
+Jhansi,Uttar Pradesh,North
+Kanpur,Uttar Pradesh,North
+Lucknow,Uttar Pradesh,North
+Mathura,Uttar Pradesh,North
+Meerut,Uttar Pradesh,North
+Mirzapur,Uttar Pradesh,North
+Moradabad,Uttar Pradesh,North
+Muzaffarnagar,Uttar Pradesh,North
+Noida,Uttar Pradesh,North
+Prayagraj (Allahabad),Uttar Pradesh,North
+Rae Bareli,Uttar Pradesh,North
+Rampur,Uttar Pradesh,North
+Saharanpur,Uttar Pradesh,North
+Sambhal,Uttar Pradesh,North
+Varanasi,Uttar Pradesh,North
+Dehradun,Uttarakhand,North
+Haldwani,Uttarakhand,North
+Haridwar,Uttarakhand,North
+Kashipur,Uttarakhand,North
+Pithoragarh,Uttarakhand,North
+Rishikesh,Uttarakhand,North
+Roorkee,Uttarakhand,North
+Rudrapur,Uttarakhand,North
+Asansol,West Bengal,East
+Baharampur,West Bengal,East
+Balurghat,West Bengal,East
+Bankura,West Bengal,East
+Bardhaman,West Bengal,East
+Durgapur,West Bengal,East
+Haldia,West Bengal,East
+Howrah,West Bengal,East
+Jalpaiguri,West Bengal,East
+Kalyani,West Bengal,East
+Kharagpur,West Bengal,East
+Kolkata,West Bengal,East
+Malda,West Bengal,East
+Purulia,West Bengal,East
+Siliguri,West Bengal,East

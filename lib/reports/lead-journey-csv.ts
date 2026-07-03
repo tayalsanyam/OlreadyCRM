@@ -1,0 +1,73 @@
+import type { enrichLeadJourneyRow } from "@/lib/reports/lead-journey-shared";
+import { leadJourneyDbStatusLabel } from "@/lib/reports/lead-journey-filters";
+import { csvDateTimeCell } from "@/lib/utils";
+
+export const LEAD_JOURNEY_CSV_HEADERS = [
+  "Display ID",
+  "Bride",
+  "RM",
+  "Region",
+  "Tier",
+  "Status",
+  "Last contact",
+  "Portal",
+  "Created",
+  "Verified",
+  "Assigned",
+  "Bride Confirmed",
+  "Intake Profiles",
+  "Confirmation Status",
+  "First Push",
+  "Offer Sent",
+  "Negotiating",
+  "Booked",
+  "Shifted",
+  "Days To Verify",
+  "Days To Assign",
+  "Days To Confirm",
+  "Days To First Push",
+  "Days To Offer",
+  "Days To Negotiating",
+  "Days To Booking",
+  "Days To Shift",
+  "Total Days",
+  "MUAs Offered",
+  "Total Pushes",
+] as const;
+
+export function leadJourneyToCsvRows(
+  leads: ReturnType<typeof enrichLeadJourneyRow>[]
+): unknown[][] {
+  return leads.map((l) => [
+    l.displayId,
+    l.brideName,
+    l.rmName ?? "",
+    l.region,
+    l.budgetTier,
+    leadJourneyDbStatusLabel(l.status, l.leadPhase),
+    csvDateTimeCell(l.lastContactAt),
+    l.portalOnly ? "Portal" : "Non-portal",
+    csvDateTimeCell(l.tCreated),
+    csvDateTimeCell(l.tVerified),
+    csvDateTimeCell(l.tAssigned),
+    csvDateTimeCell(l.tConfirmed),
+    l.intakeProfilesCount ?? 0,
+    l.confirmationStatus ?? "",
+    csvDateTimeCell(l.tFirstPush),
+    csvDateTimeCell(l.tOfferSent),
+    csvDateTimeCell(l.tNegotiating),
+    csvDateTimeCell(l.tBooked),
+    csvDateTimeCell(l.tShifted),
+    l.daysToVerify ?? "",
+    l.daysToAssign ?? "",
+    l.daysToConfirm ?? "",
+    l.daysToFirstPush ?? "",
+    l.daysToOfferSent ?? "",
+    l.daysToNegotiating ?? "",
+    l.daysToBooking ?? "",
+    l.daysToShift ?? "",
+    l.totalDaysOpen ?? "",
+    l.totalMuasOffered,
+    l.totalPushes,
+  ]);
+}
