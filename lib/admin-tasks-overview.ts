@@ -1,5 +1,12 @@
 import { sql } from "@/db/index";
 import { fromDbTaskType } from "@/lib/db-mappers";
+import { loadDiscountRequestsByStageLogIds } from "@/lib/sales-deal-discount";
+import {
+  formatDiscountTaskDisplayTitle,
+  formatDiscountTaskMeta,
+  parseDiscountTaskTitle,
+  type AdminDiscountTaskDetails,
+} from "@/lib/sales-deal-discount-shared";
 import { TASK_TYPE_LABELS } from "@/lib/types";
 
 export type AdminTaskOverviewItem = {
@@ -17,6 +24,7 @@ export type AdminTaskOverviewItem = {
   muaId?: string | null;
   meta?: string | null;
   link?: string | null;
+  discountDetails?: AdminDiscountTaskDetails;
 };
 
 export type AdminTaskOverviewStaff = {
@@ -210,23 +218,37 @@ export async function fetchAdminTasksOverview(opts: {
 
   const byStaff = new Map<string, AdminTaskOverviewItem[]>();
 
+  const discountStageLogIds = crmRows
+    .map((row) => parseDiscountTaskTitle(row.title)?.stageLogId)
+    .filter((id): id is string => Boolean(id));
+  const discountDetailsByLogId = await loadDiscountRequestsByStageLogIds(sql, discountStageLogIds);
+
   for (const row of crmRows) {
     const type = fromDbTaskType(row.taskType);
     const label = TASK_TYPE_LABELS[type] ?? row.taskType;
+    const discountRef = parseDiscountTaskTitle(row.title);
+    const discountDetails = discountRef ? discountDetailsByLogId.get(discountRef.stageLogId) : undefined;
     const list = byStaff.get(row.staffId) ?? [];
     list.push({
       id: row.id,
       kind: "crm",
       displayId: row.displayId,
-      title: row.title || label,
+      title: discountDetails
+        ? `Approve deal discount — ${discountDetails.muaName}`
+        : formatDiscountTaskDisplayTitle(row.title || label),
       status: row.status,
       dueAt: row.dueDate,
       assigneeId: row.staffId,
       assigneeName: "",
       taskType: row.taskType,
       leadId: row.leadId,
-      meta: row.leadName ? `Lead: ${row.leadName}` : label,
+      meta: discountDetails
+        ? formatDiscountTaskMeta(discountDetails)
+        : row.leadName
+          ? `Lead: ${row.leadName}`
+          : label,
       link: `/admin/tasks?tab=team&open=crm:${row.id}`,
+      discountDetails,
     });
     byStaff.set(row.staffId, list);
   }

@@ -22,8 +22,10 @@ import {
   type MuaImportProfile,
   type ValidatedMuaRow,
   type MuaRowStatus,
+  type ImportMuaRowPayload,
 } from "@/lib/mua-import";
 import { PLAN_TIER_LABELS } from "@/lib/types";
+import { importMuasInChunks } from "@/lib/mua-import-client";
 
 const STEPS = ["Profile", "Upload", "Map columns", "Review", "Done"];
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -51,6 +53,9 @@ export function MuaImportWizard({
   const [validated, setValidated] = useState<ValidatedMuaRow[]>([]);
   const [filter, setFilter] = useState<"all" | MuaRowStatus>("all");
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ processedRows: number; totalRows: number } | null>(
+    null,
+  );
   const [result, setResult] = useState<{
     imported: number;
     skipped: number;
@@ -95,49 +100,45 @@ export function MuaImportWizard({
     ]);
   }
 
-  async function runImport() {
-    const rows = validated.filter((r) => r.status !== "error");
-    setImporting(true);
-    const res = await fetch("/api/admin/import-muas", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        profile,
-        rows: rows.map((r) => ({
-          name: r.name,
-          city: r.city,
-          regions: r.regions,
-          phone: r.phone,
-          email: r.email,
-          source: r.source,
-          instagram: r.instagram,
-          whatsapp: r.whatsapp,
-          bio: r.bio,
-          planTier: r.planTier,
-          planExpiry: r.planExpiry,
-          leadCap: r.leadCap,
-          leadBudget: r.leadBudget,
-          planStates: r.planStates,
-          planRegions: r.planRegions,
-          planCities: r.planCities,
-        })),
-      }),
-    });
-    const json = (await res.json()) as {
-      data: {
-        imported: number;
-        skipped: number;
-        duplicates?: Array<{ name: string; reason: string }>;
-      } | null;
-      error?: string;
+  function rowPayload(r: ValidatedMuaRow): ImportMuaRowPayload {
+    return {
+      name: r.name,
+      city: r.city,
+      regions: r.regions,
+      phone: r.phone,
+      email: r.email,
+      source: r.source,
+      instagram: r.instagram,
+      whatsapp: r.whatsapp,
+      bio: r.bio,
+      planTier: r.planTier,
+      planExpiry: r.planExpiry,
+      leadCap: r.leadCap,
+      leadBudget: r.leadBudget,
+      planStates: r.planStates,
+      planRegions: r.planRegions,
+      planCities: r.planCities,
     };
-    setImporting(false);
-    if (res.ok && json.data) {
-      setResult(json.data);
+  }
+
+  async function runImport() {
+    const rows = validated.filter((r) => r.status !== "error").map(rowPayload);
+    setImporting(true);
+    setImportProgress({ processedRows: 0, totalRows: rows.length });
+    try {
+      const data = await importMuasInChunks({
+        profile,
+        rows,
+        onProgress: (p) => setImportProgress({ processedRows: p.processedRows, totalRows: p.totalRows }),
+      });
+      setResult(data);
       setStep(4);
-      return;
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Import failed", "error");
+    } finally {
+      setImporting(false);
+      setImportProgress(null);
     }
-    toast(json.error ?? "Import failed", "error");
   }
 
   if (step === 4 && result) {
@@ -317,6 +318,11 @@ export function MuaImportWizard({
 
       {step === 3 && (
         <div className="space-y-4">
+          {importing && importProgress ? (
+            <div className="rounded-lg border border-brand/20 bg-brand/5 px-4 py-3 text-sm text-brand">
+              Importing {importProgress.processedRows} / {importProgress.totalRows} rows…
+            </div>
+          ) : null}
           <div className="flex flex-wrap gap-2 text-sm">
             <span className="text-emerald-700">✅ {summary.ready} ready</span>
             <span className="text-amber-700">⚠ {summary.warning} warnings</span>

@@ -17,10 +17,16 @@ export async function POST(request: Request) {
   const body = (await request.json()) as {
     rows?: ImportMuaRowPayload[];
     profile?: MuaImportProfile;
+    chunkMeta?: { startIndex?: number; totalRows?: number };
   };
   if (!body.rows?.length) {
     return NextResponse.json({ data: null, error: "rows required" }, { status: 400 });
   }
+
+  const chunkStart = body.chunkMeta?.startIndex ?? 0;
+  const totalRows = body.chunkMeta?.totalRows ?? body.rows.length;
+  const processedRows = chunkStart + body.rows.length;
+  const done = processedRows >= totalRows;
 
   if (USE_MOCK) {
     const result = mockStore.importValidatedMuas(
@@ -34,7 +40,10 @@ export async function POST(request: Request) {
         planExpiry: r.planExpiry,
       })),
     );
-    return NextResponse.json({ data: result, error: null });
+    return NextResponse.json({
+      data: { ...result, processedRows, totalRows, done },
+      error: null,
+    });
   }
 
   const result = await withTransaction(async (tx) =>
@@ -47,6 +56,9 @@ export async function POST(request: Request) {
       skipped: result.skipped,
       errors: result.errors,
       duplicates: result.duplicates,
+      processedRows,
+      totalRows,
+      done,
     },
     error: null,
   });

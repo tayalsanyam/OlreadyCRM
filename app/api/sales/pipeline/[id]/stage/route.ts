@@ -19,13 +19,14 @@ import { resolveSalesTeamLeadId } from "@/lib/sales-report-scope";
 import { cancelPendingSalesPipelineTasks } from "@/lib/sales-pipeline-assign-tasks";
 import { buildStageLogMetadata } from "@/lib/stage-log-plan";
 import {
-  loadPipelineQuotedAmount,
-  resolvePaymentCloseStage,
-  resolveQuotedDealAmount,
-  sumPipelinePayments,
-} from "@/lib/sales-deal-payment";
+  applyDiscountToQuotedAmount,
+  createDiscountApprovalRequest,
+  findPendingDiscountRequest,
+  needsDiscountApproval,
+  resolveListPriceForDiscount,
+} from "@/lib/sales-deal-discount";
+import { executePipelineDealClose } from "@/lib/sales-pipeline-deal-close";
 import { createNotification } from "@/lib/notifications";
-import { ONBOARDING_STAGE } from "@/lib/sales-pipeline-stages";
 
 type StagePayload = {
   toStage?: PipelineStage;
@@ -42,6 +43,8 @@ type StagePayload = {
     paymentMode?: "UPI" | "Cash" | "Bank Transfer" | "Card" | "Other";
     notes?: string;
   };
+  discountAmount?: number;
+  discountReason?: string;
 };
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -97,6 +100,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       onboardingTaskCreated: boolean;
       totalPaid?: number;
       quotedAmount?: number;
+      pendingDiscountApproval?: boolean;
+      stageLogId?: string;
     } | null = null;
 
     await withTransaction(async (tx) => {
@@ -217,34 +222,98 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
       let effectiveStage: PipelineStage = toStage;
       let paymentSummary: { totalPaid: number; quotedAmount: number } | null = null;
+      let dealCloseHandled = false;
+      const createdTasks: Array<{ type: string; assigneeId: string | null; dueDate: string | null }> = [];
 
       if (toStage === "Deal Closed") {
-        await tx`
-          INSERT INTO sales.payment_records (pipeline_id, amount, payment_date, payment_mode, notes)
-          VALUES (
-            ${id}::uuid,
-            ${body.paymentDetails!.amount!},
-            ${body.paymentDetails!.paymentDate!},
-            ${body.paymentDetails!.paymentMode!},
-            ${body.paymentDetails!.notes?.trim() || null}
-          )
-        `;
-        const storedQuoted = await loadPipelineQuotedAmount(tx, id);
-        const quotedAmount = resolveQuotedDealAmount(body.quotedAmount, storedQuoted);
-        if (quotedAmount <= 0) {
-          throw Object.assign(new Error("Deal price is required — set quoted amount at Confirm"), { status: 400 });
+        const existingDiscount = await findPendingDiscountRequest(tx, id);
+        if (existingDiscount) {
+          throw Object.assign(new Error("A discount approval is already pending for this deal"), { status: 409 });
         }
-        const totalPaid = await sumPipelinePayments(tx, id);
-        effectiveStage = resolvePaymentCloseStage(totalPaid, quotedAmount);
-        paymentSummary = { totalPaid, quotedAmount };
-        if (effectiveStage === "Part Payment" && !body.nextTouchPoint) {
-          throw Object.assign(
-            new Error("Next touch point is required while balance remains on the deal"),
-            { status: 400 },
-          );
+
+        const discountAmount = Number(body.discountAmount ?? 0);
+        const listPrice = await resolveListPriceForDiscount(tx, id, body.quotedAmount);
+
+        if (needsDiscountApproval(auth.session.role, discountAmount)) {
+          if (!body.discountReason?.trim() || body.discountReason.trim().length < 10) {
+            throw Object.assign(new Error("Discount reason required (minimum 10 characters)"), { status: 400 });
+          }
+          const request = await createDiscountApprovalRequest(tx, {
+            pipelineId: id,
+            fromStage,
+            actorId: auth.session.userId,
+            actorRole: auth.session.role,
+            muaName: pipeline.muaName,
+            note: trimmedNote,
+            listPrice,
+            discountAmount,
+            discountReason: body.discountReason.trim(),
+            stagePayload: {
+              note: trimmedNote,
+              nextTouchPoint: body.nextTouchPoint,
+              planDetails: body.planDetails,
+              quotedAmount: listPrice,
+              discountAmount,
+              discountReason: body.discountReason.trim(),
+              paymentDetails: body.paymentDetails,
+              plansShared,
+            },
+          });
+          stageResult = {
+            toStage: fromStage,
+            onboardingTaskCreated: false,
+            pendingDiscountApproval: true,
+            stageLogId: request.stageLogId,
+          };
+          return;
         }
+
+        let quotedForClose = listPrice;
+        if (discountAmount > 0) {
+          quotedForClose = applyDiscountToQuotedAmount(listPrice, discountAmount);
+          await tx`
+            UPDATE sales.onboarding
+            SET quoted_amount = ${quotedForClose}, updated_at = NOW()
+            WHERE pipeline_id = ${id}::uuid
+          `;
+        }
+
+        const closeResult = await executePipelineDealClose(tx, {
+          pipelineId: id,
+          actorId: auth.session.userId,
+          fromStage,
+          note: trimmedNote,
+          nextTouchPoint: body.nextTouchPoint,
+          planDetails: body.planDetails,
+          plansShared,
+          paymentDetails: {
+            amount: body.paymentDetails!.amount!,
+            paymentDate: body.paymentDetails!.paymentDate!,
+            paymentMode: body.paymentDetails!.paymentMode!,
+            notes: body.paymentDetails!.notes,
+          },
+          quotedAmount: quotedForClose,
+          pipeline: {
+            assignedTo: pipeline.assignedTo,
+            muaName: pipeline.muaName,
+            muaId: pipeline.muaId,
+            muaType: pipeline.muaType,
+          },
+        });
+
+        effectiveStage = closeResult.effectiveStage;
+        paymentSummary = { totalPaid: closeResult.totalPaid, quotedAmount: closeResult.quotedAmount };
+        createdTasks.push(...closeResult.createdTasks);
+        dealCloseHandled = true;
+        stageResult = {
+          toStage: closeResult.effectiveStage,
+          onboardingTaskCreated: closeResult.onboardingTaskCreated,
+          totalPaid: closeResult.totalPaid,
+          quotedAmount: closeResult.quotedAmount,
+        };
       }
 
+      if (!dealCloseHandled) {
       const stageLogMetadata = buildStageLogMetadata(effectiveStage, {
         plansShared,
         planDetails: body.planDetails,
@@ -264,92 +333,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
           ${stageLogMetadata ? tx.json(stageLogMetadata) : null}
         )
       `;
+      }
 
-      const createdTasks: Array<{ type: string; assigneeId: string | null; dueDate: string | null }> = [];
-
-      if (toStage === "Deal Closed") {
-        const taskAssignee = pipeline.assignedTo ?? auth.session.userId;
-
-        await tx`
-          UPDATE sales.pipeline
-          SET
-            stage = ${effectiveStage},
-            status = 'active',
-            sales_closed_by = CASE
-              WHEN ${effectiveStage} = ${ONBOARDING_STAGE} THEN ${auth.session.userId}::uuid
-              ELSE sales_closed_by
-            END,
-            updated_at = NOW()
-          WHERE id = ${id}::uuid
-        `;
-
-        if (effectiveStage === ONBOARDING_STAGE) {
-          await tx`
-            UPDATE muas
-            SET sales_closed_by = ${auth.session.userId}::uuid, updated_at = NOW()
-            WHERE id = ${pipeline.muaId}::uuid
-          `;
-        }
-
-        await cancelPendingSalesTasks();
-
-        let onboardingTaskCreated = false;
-        if (effectiveStage === ONBOARDING_STAGE && taskAssignee) {
-          const taskDisplayId = await generateTaskDisplayId(tx);
-          await tx`
-            INSERT INTO rm_tasks (display_id, staff_id, lead_id, push_id, task_type, title, due_date, status)
-            VALUES (
-              ${taskDisplayId},
-              ${taskAssignee}::uuid,
-              NULL,
-              NULL,
-              ${toDbTaskType("salesOnboarding")}::task_type,
-              ${`Onboarding checklist — ${pipeline.muaName} ${pipelineRef}`},
-              CURRENT_DATE,
-              'pending'
-            )
-          `;
-          createdTasks.push({ type: "salesOnboarding", assigneeId: taskAssignee, dueDate: null });
-          onboardingTaskCreated = true;
-          await createNotification(tx, {
-            userId: taskAssignee,
-            message: `Onboarding checklist — ${pipeline.muaName}`,
-            link: "/sales/tasks",
-          });
-        } else if (effectiveStage === "Part Payment" && taskAssignee && body.nextTouchPoint) {
-          const balance = Math.max(0, (paymentSummary?.quotedAmount ?? 0) - (paymentSummary?.totalPaid ?? 0));
-          const taskDisplayId = await generateTaskDisplayId(tx);
-          await tx`
-            INSERT INTO rm_tasks (display_id, staff_id, lead_id, push_id, task_type, title, due_date, status)
-            VALUES (
-              ${taskDisplayId},
-              ${taskAssignee}::uuid,
-              NULL,
-              NULL,
-              ${toDbTaskType("salesFollowUp")}::task_type,
-              ${`Part payment — collect ₹${balance.toLocaleString("en-IN")} balance — ${pipeline.muaName} ${pipelineRef}`},
-              ${body.nextTouchPoint},
-              'pending'
-            )
-          `;
-          createdTasks.push({
-            type: "salesFollowUp",
-            assigneeId: taskAssignee,
-            dueDate: body.nextTouchPoint ?? null,
-          });
-        }
-
-        if (effectiveStage === ONBOARDING_STAGE && pipeline.muaType === "renewal") {
-          await setRenewalAttemptOutcome(tx, id, "renewed");
-        }
-
-        stageResult = {
-          toStage: effectiveStage,
-          onboardingTaskCreated,
-          totalPaid: paymentSummary?.totalPaid,
-          quotedAmount: paymentSummary?.quotedAmount,
-        };
-      } else {
+      if (toStage !== "Deal Closed") {
         const reopen = fromStage === "Rejected";
         if (toStage === "Rejected") {
           await processPipelineRejection(tx, {

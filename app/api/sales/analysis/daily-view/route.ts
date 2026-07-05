@@ -108,7 +108,7 @@ export async function GET() {
         s.name AS "assignedToName",
         p.assigned_to AS "assignedToId",
         DATE_PART('day', NOW() - p.updated_at)::int AS "daysInStage",
-        COALESCE(pr.amount, o.avg_revenue_target)::numeric AS "priceOffered"
+        COALESCE(o.quoted_amount, o.avg_revenue_target)::numeric AS "priceOffered"
       FROM sales.pipeline p
       JOIN muas m ON m.id = p.mua_id
       LEFT JOIN staff s ON s.id = p.assigned_to

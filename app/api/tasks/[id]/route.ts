@@ -62,6 +62,7 @@ import {
 import { leadTracksCommission } from "@/lib/lead-commission";
 import { leadTracksCommissionSync } from "@/lib/lead-tracks-commission";
 import { normalizePhoneDigits } from "@/lib/validation";
+import { isDealDiscountAdminTask } from "@/lib/sales-deal-discount-shared";
 import { USE_MOCK } from "@/lib/mock-data";
 import { mockStore } from "@/lib/mock-store";
 import { canPipelineTransition } from "@/lib/sales-stage-transitions";
@@ -155,6 +156,13 @@ export async function PATCH(
         WHERE id = ${id}::uuid AND staff_id = ${auth.session.userId}::uuid
       `;
       if (!task) throw new Error("Task not found");
+
+      if (isDealDiscountAdminTask({ kind: "crm", taskType: task.taskType, title: task.title })) {
+        throw Object.assign(
+          new Error("Deal discount tasks must be approved or rejected from Admin → Tasks"),
+          { status: 400 },
+        );
+      }
 
       if (
         task.taskType === "sales_senior_call" &&

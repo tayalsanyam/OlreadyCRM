@@ -64,7 +64,7 @@ export async function GET(request: Request) {
             'day',
             NOW() - COALESCE((SELECT MAX(created_at) FROM sales.comms_log cl WHERE cl.pipeline_id = p.id), p.created_at)
           )::int AS "daysSinceLastContact",
-          COALESCE(pr.amount, o.avg_revenue_target)::numeric AS "priceOffered",
+          COALESCE(o.quoted_amount, o.avg_revenue_target)::numeric AS "priceOffered",
           lc.outcome AS "lastCallOutcome",
           COALESCE(na.total_repeated_no_answer, 0)::int AS "totalRepeatedNoAnswer"
         FROM sales.pipeline p
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
             'day',
             NOW() - COALESCE((SELECT MAX(created_at) FROM sales.comms_log cl WHERE cl.pipeline_id = p.id), p.created_at)
           )::int AS "daysSinceLastContact",
-          COALESCE(pr.amount, o.avg_revenue_target)::numeric AS "priceOffered",
+          COALESCE(o.quoted_amount, o.avg_revenue_target)::numeric AS "priceOffered",
           lc.outcome AS "lastCallOutcome",
           COALESCE(na.total_repeated_no_answer, 0)::int AS "totalRepeatedNoAnswer",
           ARRAY_REMOVE(ARRAY[

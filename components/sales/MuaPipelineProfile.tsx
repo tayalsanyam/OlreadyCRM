@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SlideOver } from "@/components/ui/SlideOver";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import { Badge } from "@/components/ui/Badge";
 import { StageChangePanel } from "@/components/sales/StageChangePanel";
 import { OnboardingChecklistFlow } from "@/components/sales/checklists/OnboardingChecklistFlow";
@@ -23,6 +24,7 @@ import { PipelineStageTrack } from "@/components/sales/PipelineStageTrack";
 import { deriveSalesProfileStatus } from "@/lib/sales-profile-status";
 import { formatStageLogPlanSummary } from "@/lib/stage-log-plan";
 import { paymentBalanceLabel } from "@/lib/sales-deal-payment";
+import { PendingDiscountAdminPanel } from "@/components/sales/PendingDiscountAdminPanel";
 import { resolveMuaRegions } from "@/lib/mua-region";
 import { salesPipelineMuaTypeLabel } from "@/lib/sales-pipeline-labels";
 import { PLAN_TIER_LABELS, type PipelineStage, type PlanTier, type Region } from "@/lib/types";
@@ -78,6 +80,7 @@ export function MuaPipelineProfile({
   initialTab?: Tab;
   onPipelineUpdated?: () => void;
 }) {
+  const { toast } = useToast();
   const [tab, setTab] = useState<Tab>(initialTab ?? "overview");
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -311,8 +314,21 @@ export function MuaPipelineProfile({
                   />
                   <ProfileStatCard
                     label="Deal amount"
-                    value={data.payment ? `₹${data.payment.amount}` : "—"}
-                    hint={data.payment ? `${data.payment.paymentMode} · ${data.payment.paymentDate}` : undefined}
+                    value={
+                      data.paymentSummary?.quotedAmount
+                        ? `₹${Number(data.paymentSummary.quotedAmount).toLocaleString("en-IN")}`
+                        : "—"
+                    }
+                    hint={
+                      data.paymentSummary
+                        ? paymentBalanceLabel(
+                            Number(data.paymentSummary.quotedAmount ?? 0),
+                            Number(data.paymentSummary.totalPaid ?? 0),
+                          )
+                        : data.payment
+                          ? `${data.payment.paymentMode} · ${data.payment.paymentDate}`
+                          : undefined
+                    }
                   />
                   <ProfileStatCard
                     label="Calls"
@@ -337,6 +353,21 @@ export function MuaPipelineProfile({
                     <p className="mt-3 rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-950">
                       Complete onboarding checklists on the Checklists tab. The deal moves to Deal Closed automatically when training is finished.
                     </p>
+                  ) : null}
+                  {data.pendingDiscount ? (
+                    <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                      <p>
+                        Discount approval pending — ₹
+                        {Number(data.pendingDiscount.discountAmount ?? 0).toLocaleString("en-IN")} off list price (net ₹
+                        {Number(data.pendingDiscount.netQuoted ?? 0).toLocaleString("en-IN")}). An admin must approve before
+                        the deal can close.
+                      </p>
+                      <PendingDiscountAdminPanel
+                        stageLogId={data.pendingDiscount.stageLogId}
+                        muaName={data.pendingDiscount.muaName ?? data.pipeline.muaName ?? "MUA"}
+                        onResolved={() => void handlePipelineRefresh()}
+                      />
+                    </div>
                   ) : null}
                   {data.pipeline.stage === "Part Payment" && data.paymentSummary ? (
                     <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -590,6 +621,9 @@ export function MuaPipelineProfile({
           prefill={stagePreset}
           onDone={(result) => {
             void handlePipelineRefresh();
+            if (result?.pendingDiscountApproval) {
+              toast("Discount submitted for admin approval", "success");
+            }
             if (result?.toStage === "Onboarding") {
               setTab("checklists");
             }

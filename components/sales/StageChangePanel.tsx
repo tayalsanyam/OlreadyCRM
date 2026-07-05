@@ -51,6 +51,8 @@ export type StageChangeResult = {
   onboardingTaskCreated?: boolean;
   totalPaid?: number;
   quotedAmount?: number;
+  pendingDiscountApproval?: boolean;
+  stageLogId?: string;
 };
 
 export function StageChangePanel({
@@ -91,6 +93,14 @@ export function StageChangePanel({
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [paymentMode, setPaymentMode] = useState<PaymentPayload["paymentMode"]>("UPI");
   const [paymentNotes, setPaymentNotes] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
+  const [discountReason, setDiscountReason] = useState("");
+  const [pendingDiscount, setPendingDiscount] = useState<{
+    discountAmount: number;
+    listPrice: number;
+    netQuoted: number;
+    reason: string;
+  } | null>(null);
   const [muaName, setMuaName] = useState("");
   const [muaPhone, setMuaPhone] = useState<string | null>(null);
   const [muaWhatsapp, setMuaWhatsapp] = useState<string | null>(null);
@@ -114,6 +124,9 @@ export function StageChangePanel({
     setPaymentDate(new Date().toISOString().slice(0, 10));
     setPaymentMode("UPI");
     setPaymentNotes("");
+    setDiscountAmount("");
+    setDiscountReason("");
+    setPendingDiscount(null);
 
     (async () => {
       const res = await fetch(`/api/sales/pipeline/${pipelineId}`);
@@ -124,8 +137,27 @@ export function StageChangePanel({
         whatsapp?: string | null;
         muaCity?: string;
       } | undefined;
-      const paymentSummary = json?.data?.paymentSummary as { totalPaid?: number } | undefined;
+      const paymentSummary = json?.data?.paymentSummary as { totalPaid?: number; quotedAmount?: number } | undefined;
       setPriorPaid(Number(paymentSummary?.totalPaid ?? 0));
+      const pending = json?.data?.pendingDiscount as
+        | {
+            discountAmount?: number;
+            listPrice?: number;
+            netQuoted?: number;
+            reason?: string;
+          }
+        | null
+        | undefined;
+      setPendingDiscount(
+        pending
+          ? {
+              discountAmount: Number(pending.discountAmount ?? 0),
+              listPrice: Number(pending.listPrice ?? 0),
+              netQuoted: Number(pending.netQuoted ?? 0),
+              reason: String(pending.reason ?? ""),
+            }
+          : null,
+      );
       const muaRegions = (json?.data?.muaRegions ?? []) as Region[];
       setMuaName(pipeline?.muaName ?? "");
       setMuaPhone(pipeline?.muaPhone ?? null);
@@ -184,13 +216,15 @@ export function StageChangePanel({
     (toStage === "Details Shared" || toStage === "Confirm" || toStage === "Deal Closed");
 
   const dealPrice = Number(quotedAmount) || 0;
+  const discountValue = Number(discountAmount) || 0;
+  const netDealPrice = Math.max(0, dealPrice - discountValue);
   const receivedNow = Number(paymentAmount) || 0;
   const cumulativePaid = priorPaid + receivedNow;
   const partialPaymentClose =
     toStage === "Deal Closed" &&
-    dealPrice > 0 &&
+    (discountValue > 0 ? netDealPrice : dealPrice) > 0 &&
     receivedNow > 0 &&
-    cumulativePaid + 0.009 < dealPrice;
+    cumulativePaid + 0.009 < (discountValue > 0 ? netDealPrice : dealPrice);
 
   const needsNextTouch =
     rescheduleOnly ||
@@ -204,6 +238,15 @@ export function StageChangePanel({
     if (needsNextTouch && !nextTouchPoint) missing.push("Next touch point date");
     if (toStage === "Rejected" && !rejectionReason.trim()) missing.push("Rejection reason");
     if (planValidationError) missing.push(planValidationError);
+    if (toStage === "Deal Closed" && pendingDiscount) {
+      missing.push("A discount approval is already pending for this deal");
+    }
+    if (toStage === "Deal Closed" && discountValue > 0 && discountReason.trim().length < 10) {
+      missing.push("Discount reason (minimum 10 characters)");
+    }
+    if (toStage === "Deal Closed" && discountValue > 0 && netDealPrice + 0.009 < priorPaid) {
+      missing.push("Net deal price cannot be below amount already received");
+    }
     return missing;
   }, [
     validTarget,
@@ -213,6 +256,11 @@ export function StageChangePanel({
     toStage,
     rejectionReason,
     planValidationError,
+    pendingDiscount,
+    discountValue,
+    discountReason,
+    netDealPrice,
+    priorPaid,
   ]);
 
   async function submit() {
@@ -238,15 +286,17 @@ export function StageChangePanel({
       body.quotedAmount = Number(quotedAmount) || resolveQuotedAmountFromPlansShared(planDetails.plan, plansShared);
     }
     if (toStage === "Deal Closed") {
-      body.quotedAmount =
-        Number(quotedAmount) ||
-        resolveQuotedAmountFromPlansShared(planDetails.plan, plansShared);
+      body.quotedAmount = dealPrice;
       body.paymentDetails = {
         amount: Number(paymentAmount),
         paymentDate,
         paymentMode,
         notes: paymentNotes.trim() || undefined,
       };
+      if (discountValue > 0) {
+        body.discountAmount = discountValue;
+        body.discountReason = discountReason.trim();
+      }
     }
 
     const res = await fetch(`/api/sales/pipeline/${pipelineId}/stage`, {
@@ -261,6 +311,11 @@ export function StageChangePanel({
       return;
     }
     const result = (json?.data ?? null) as StageChangeResult | null;
+    if (result?.pendingDiscountApproval) {
+      onDone(result);
+      onClose();
+      return;
+    }
     onDone(
       result?.toStage
         ? result
@@ -362,6 +417,12 @@ export function StageChangePanel({
 
         {toStage === "Deal Closed" ? (
           <>
+            {pendingDiscount ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                Discount approval pending — ₹{pendingDiscount.discountAmount.toLocaleString("en-IN")} off list price
+                (net ₹{pendingDiscount.netQuoted.toLocaleString("en-IN")}). Wait for admin approval before closing.
+              </p>
+            ) : null}
             <PlanDetailsFields
               artistCity={muaCity ?? undefined}
               artistRegions={artistRegions}
@@ -371,7 +432,14 @@ export function StageChangePanel({
             />
             {dealPrice > 0 ? (
               <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
-                Deal price: ₹{dealPrice.toLocaleString("en-IN")}
+                List price: ₹{dealPrice.toLocaleString("en-IN")}
+                {discountValue > 0 ? (
+                  <>
+                    {" "}
+                    · Discount: ₹{discountValue.toLocaleString("en-IN")} · Net: ₹
+                    {netDealPrice.toLocaleString("en-IN")}
+                  </>
+                ) : null}
                 {priorPaid > 0 ? (
                   <>
                     {" "}
@@ -381,10 +449,10 @@ export function StageChangePanel({
                 {receivedNow > 0 ? (
                   <>
                     {" "}
-                    · {paymentBalanceLabel(dealPrice, cumulativePaid)}
+                    · {paymentBalanceLabel(discountValue > 0 ? netDealPrice : dealPrice, cumulativePaid)}
                   </>
                 ) : priorPaid > 0 ? (
-                  <> · {paymentBalanceLabel(dealPrice, priorPaid)}</>
+                  <> · {paymentBalanceLabel(discountValue > 0 ? netDealPrice : dealPrice, priorPaid)}</>
                 ) : null}
                 {partialPaymentClose
                   ? " — balance remaining will move this MUA to Part Payment automatically."
@@ -394,6 +462,33 @@ export function StageChangePanel({
                       ? " — record the next payment to continue closing the deal."
                       : null}
               </p>
+            ) : null}
+            {!pendingDiscount ? (
+              <div className="space-y-3 rounded-lg border border-dashed border-slate-200 p-3">
+                <p className="text-sm font-semibold text-brand">Discount (optional)</p>
+                <Input
+                  label="Discount amount (INR)"
+                  type="number"
+                  value={discountAmount}
+                  onChange={(e) => setDiscountAmount(e.target.value)}
+                />
+                {discountValue > 0 ? (
+                  <>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-text">Discount reason *</label>
+                      <textarea
+                        className="min-h-16 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                        value={discountReason}
+                        onChange={(e) => setDiscountReason(e.target.value)}
+                        placeholder="Why is this discount being offered?"
+                      />
+                    </div>
+                    <p className="text-xs text-slate-muted">
+                      Sales RM/TL discounts require admin approval before the deal closes.
+                    </p>
+                  </>
+                ) : null}
+              </div>
             ) : null}
             <div className="space-y-3 rounded-lg border border-slate-200 p-3">
               <p className="text-sm font-semibold text-brand">Payment *</p>

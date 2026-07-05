@@ -197,7 +197,7 @@ export async function POST(request: Request) {
       s.name AS "assignedToName",
       p.created_at AS "createdAt",
       p.updated_at AS "updatedAt",
-      COALESCE(pr.amount, o.avg_revenue_target) AS "priceOffered",
+      COALESCE(o.quoted_amount, o.avg_revenue_target) AS "priceOffered",
       COALESCE(ca.calls_count, 0)::int AS "callsCount",
       COALESCE(ca.talk_time_sec, 0)::int AS "talkTimeSec",
       ca.last_call_at AS "lastCallAt"

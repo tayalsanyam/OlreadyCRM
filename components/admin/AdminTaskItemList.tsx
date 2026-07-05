@@ -4,8 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { cn, formatDate } from "@/lib/utils";
 import { GrievanceTaskCompleteModal } from "@/components/grievances/GrievanceTaskCompleteModal";
-import { CrmTaskCompleteModal } from "@/components/admin/AdminTaskActions";
+import { CrmTaskCompleteModal, DealDiscountApprovalModal } from "@/components/admin/AdminTaskActions";
 import { OpsTaskCompleteModal } from "@/components/ops/OpsTaskCompleteModal";
+import {
+  discountStageLogIdFromTask,
+  isDealDiscountAdminTask,
+  type AdminDiscountTaskDetails,
+} from "@/lib/sales-deal-discount-shared";
 
 export type AdminTaskListItem = {
   id: string;
@@ -22,6 +27,7 @@ export type AdminTaskListItem = {
   muaId?: string | null;
   meta?: string | null;
   link?: string | null;
+  discountDetails?: AdminDiscountTaskDetails;
 };
 
 const KIND_LABEL: Record<AdminTaskListItem["kind"], string> = {
@@ -82,6 +88,7 @@ export function AdminTaskItemList({
           const href = workspaceHref(t) ?? t.link;
           const mine = canComplete(t);
           const showInspect = openViaInspector && onInspect;
+          const isDiscountTask = isDealDiscountAdminTask(t);
           return (
             <li
               key={`${t.kind}-${t.id}`}
@@ -152,7 +159,7 @@ export function AdminTaskItemList({
                       className="font-medium text-brand hover:underline"
                       onClick={() => setCrmTask(t)}
                     >
-                      Complete
+                      {isDiscountTask ? "Review discount" : "Complete"}
                     </button>
                   )}
                   {mine && t.kind === "care" && (
@@ -185,7 +192,22 @@ export function AdminTaskItemList({
         })}
       </ul>
 
-      {crmTask && (
+      {crmTask && isDealDiscountAdminTask(crmTask) && discountStageLogIdFromTask(crmTask) ? (
+        <DealDiscountApprovalModal
+          stageLogId={discountStageLogIdFromTask(crmTask)!}
+          displayId={crmTask.displayId}
+          title={crmTask.title}
+          details={crmTask.discountDetails}
+          open={Boolean(crmTask)}
+          onClose={() => setCrmTask(null)}
+          onCompleted={() => {
+            onChanged?.();
+            setCrmTask(null);
+          }}
+        />
+      ) : null}
+
+      {crmTask && !isDealDiscountAdminTask(crmTask) ? (
         <CrmTaskCompleteModal
           taskId={crmTask.id}
           displayId={crmTask.displayId}
@@ -198,7 +220,7 @@ export function AdminTaskItemList({
             setCrmTask(null);
           }}
         />
-      )}
+      ) : null}
 
       {careTask && (
         <GrievanceTaskCompleteModal

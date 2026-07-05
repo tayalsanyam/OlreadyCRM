@@ -37,7 +37,7 @@ const ACTIVE_MUA_SELECT = (tx: TransactionSql) => tx`
     s.name AS "salesClosedByName",
     rm.name AS "assignedRmName",
     closed.updated_at AS "salesClosedAt",
-    pr.amount AS "dealAmount",
+    o.quoted_amount AS "dealAmount",
     closed.id AS "pipelineId",
     (m.plan_expiry::date - CURRENT_DATE)::int AS "daysUntilExpiry"
   FROM muas m
@@ -55,13 +55,7 @@ const ACTIVE_MUA_SELECT = (tx: TransactionSql) => tx`
     ORDER BY sp.updated_at DESC
     LIMIT 1
   ) closed ON TRUE
-  LEFT JOIN LATERAL (
-    SELECT amount
-    FROM sales.payment_records pr
-    WHERE pr.pipeline_id = closed.id
-    ORDER BY pr.created_at DESC
-    LIMIT 1
-  ) pr ON TRUE
+  LEFT JOIN sales.onboarding o ON o.pipeline_id = closed.id
 `;
 
 function closerMatchesUser(tx: TransactionSql, userId: string) {

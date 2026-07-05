@@ -5,6 +5,7 @@ import { fromDbPlanTier, fromDbTaskType } from "@/lib/db-mappers";
 import { fetchMuaRegions } from "@/lib/mua-regions-db";
 import { assertPipelineAccess } from "@/lib/sales-pipeline-access";
 import { loadPipelineQuotedAmount, sumPipelinePayments } from "@/lib/sales-deal-payment";
+import { findPendingDiscountRequest, ensureDiscountAdminTasksForPipeline } from "@/lib/sales-deal-discount";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireSalesOrActivationAccess();
@@ -100,6 +101,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const [payment] = await tx`SELECT * FROM sales.payment_records WHERE pipeline_id = ${id}::uuid ORDER BY created_at DESC LIMIT 1`;
     const totalPaid = await sumPipelinePayments(tx, id);
     const quotedAmount = await loadPipelineQuotedAmount(tx, id);
+    const pendingDiscount = await findPendingDiscountRequest(tx, id);
+    if (
+      pendingDiscount &&
+      (auth.session.role === "admin" || auth.session.role === "owner")
+    ) {
+      await ensureDiscountAdminTasksForPipeline(tx, id);
+    }
     const [onboarding] = await tx`SELECT * FROM sales.onboarding WHERE pipeline_id = ${id}::uuid`;
     const [training] = await tx`SELECT * FROM sales.training WHERE pipeline_id = ${id}::uuid`;
     const [activationRow] = await tx<{
@@ -199,6 +207,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       tasks,
       payment,
       paymentSummary: { totalPaid, quotedAmount },
+      pendingDiscount,
       onboarding,
       training,
       activation,

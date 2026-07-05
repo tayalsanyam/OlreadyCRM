@@ -40,6 +40,18 @@ export async function requireGrievanceAccess() {
   return requireRoles(["careAgent", "admin", "owner"]);
 }
 
+/** Staff directory for task assignment (ops tasks, support, RM team tasks). */
+export async function requireStaffAssigneeAccess() {
+  return requireRoles([
+    "regionalRm",
+    "salesRm",
+    "salesTl",
+    "careAgent",
+    "admin",
+    "owner",
+  ]);
+}
+
 export async function requireGrievanceOperatorAccess() {
   return requireRoles(["careAgent", "admin", "owner"]);
 }

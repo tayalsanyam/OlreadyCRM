@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/db/index";
-import { requireGrievanceAccess } from "@/lib/api-auth";
+import { requireStaffAssigneeAccess } from "@/lib/api-auth";
 import { fromDbRole } from "@/lib/db-mappers";
 import { DEMO_USER_ROLE_DB } from "@/lib/demo-users";
 import type { UserRole } from "@/lib/types";
@@ -12,7 +12,7 @@ function appRolesToDbSlugs(appRoles: string[]): string[] {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireGrievanceAccess();
+  const auth = await requireStaffAssigneeAccess();
   if ("error" in auth) {
     return NextResponse.json({ data: null, error: auth.error }, { status: auth.status });
   }
