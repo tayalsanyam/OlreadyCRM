@@ -1,0 +1,2 @@
+-- DEPRECATED: apply db/schema-rm.sql instead.
+-- RM Platform uses schema `rm` on Supabase; do not run legacy public-schema DDL here.
