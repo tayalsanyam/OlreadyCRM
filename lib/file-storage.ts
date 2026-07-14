@@ -16,14 +16,44 @@ const DEFAULT_BUCKET = "crm-uploads";
 
 let supabaseAdmin: SupabaseClient | null = null;
 
+function getSupabaseProjectRef(): string | null {
+  const ref = process.env.SUPABASE_PROJECT_REF?.trim();
+  if (ref) return ref;
+
+  for (const raw of [process.env.DATABASE_URL_DIRECT, process.env.DATABASE_URL]) {
+    const url = raw?.trim();
+    if (!url) continue;
+    const dbHost = url.match(/@db\.([a-z0-9]+)\.supabase\.co/i)?.[1];
+    if (dbHost) return dbHost;
+    const poolerRef = url.match(/postgres\.([a-z0-9]+)@/i)?.[1];
+    if (poolerRef) return poolerRef;
+  }
+
+  return null;
+}
+
 function getSupabaseUrl(): string | null {
-  const explicit = process.env.SUPABASE_URL?.trim();
+  const explicit =
+    process.env.SUPABASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   if (explicit) return explicit.replace(/\/$/, "");
 
-  const ref = process.env.SUPABASE_PROJECT_REF?.trim();
+  const ref = getSupabaseProjectRef();
   if (ref) return `https://${ref}.supabase.co`;
 
   return null;
+}
+
+function getServiceRoleKey(): string | null {
+  return (
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.SUPABASE_SECRET_KEY?.trim() ||
+    null
+  );
+}
+
+function isVercelRuntime(): boolean {
+  return process.env.VERCEL === "1";
 }
 
 function getStorageBucket(): string {
@@ -32,17 +62,17 @@ function getStorageBucket(): string {
 
 /** True when uploads should go to Supabase Storage (Vercel / production). */
 export function isRemoteStorageEnabled(): boolean {
-  return Boolean(getSupabaseUrl() && process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
+  return Boolean(getSupabaseUrl() && getServiceRoleKey());
 }
 
 function getSupabaseAdmin(): SupabaseClient {
   if (supabaseAdmin) return supabaseAdmin;
 
   const url = getSupabaseUrl();
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  const key = getServiceRoleKey();
   if (!url || !key) {
     throw new Error(
-      "Supabase Storage is not configured. Set SUPABASE_URL (or SUPABASE_PROJECT_REF) and SUPABASE_SERVICE_ROLE_KEY.",
+      "Supabase Storage is not configured. Set SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL / SUPABASE_PROJECT_REF / DATABASE_URL) and SUPABASE_SERVICE_ROLE_KEY.",
     );
   }
 
@@ -88,6 +118,12 @@ export async function saveUploadFile(opts: {
       .upload(key, opts.bytes, { contentType: mimeType, upsert: false });
     if (error) throw new Error(error.message);
     return { publicPath };
+  }
+
+  if (isVercelRuntime()) {
+    throw new Error(
+      "File storage is not configured on Vercel. Set NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) and SUPABASE_SERVICE_ROLE_KEY, then redeploy.",
+    );
   }
 
   const uploadDir = path.join(process.cwd(), "uploads", opts.folder);
