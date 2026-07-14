@@ -41,6 +41,7 @@
     "smoke:budget-tier": "npx tsx scripts/smoke-budget-tier.mjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.4",
     "bcryptjs": "^2.4.3",
     "jose": "^5.9.6",
     "lucide-react": "^1.16.0",

@@ -1,6 +1,5 @@
-import { readFile } from "fs/promises";
-import path from "path";
 import type { TransactionSql } from "@/db/index";
+import { readUploadFile } from "@/lib/file-storage";
 import type { ResendAttachment } from "@/lib/resend";
 import { MAX_EMAIL_ATTACHMENTS } from "@/lib/ticket-attachments";
 
@@ -44,21 +43,17 @@ export async function resolveEmailAttachments(
   const attachments: ResendAttachment[] = [];
 
   for (const row of rows) {
-    const relative = row.filePath.startsWith("/")
-      ? row.filePath.slice(1)
-      : row.filePath;
-    const diskPath = path.join(process.cwd(), relative);
-
-    try {
-      const bytes = await readFile(diskPath);
-      attachments.push({
-        filename: row.fileName,
-        content: bytes.toString("base64"),
-        content_type: row.mimeType ?? undefined,
-      });
-    } catch {
+    const publicPath = row.filePath.startsWith("/") ? row.filePath : `/${row.filePath}`;
+    const file = await readUploadFile(publicPath);
+    if (!file) {
       return { attachments: [], error: `Could not read file: ${row.fileName}` };
     }
+
+    attachments.push({
+      filename: row.fileName,
+      content: file.bytes.toString("base64"),
+      content_type: row.mimeType ?? file.mimeType,
+    });
   }
 
   return { attachments };

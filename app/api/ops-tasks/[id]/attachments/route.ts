@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { sql, withTransaction } from "@/db/index";
 import { requireSession } from "@/lib/api-auth";
+import { sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 import { getOpsTaskAccess } from "@/lib/ops-task-access";
 import {
   MAX_OPS_TASK_ATTACHMENTS,
@@ -86,14 +85,8 @@ export async function POST(
         return { limitReached: true as const };
       }
 
-      const uploadDir = path.join(process.cwd(), "uploads", "ops-tasks");
-      await mkdir(uploadDir, { recursive: true });
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const savedName = `${id}-${Date.now()}-${safeName}`;
-      const diskPath = path.join(uploadDir, savedName);
-      const bytes = Buffer.from(await file.arrayBuffer());
-      await writeFile(diskPath, bytes);
-      const publicPath = `/uploads/ops-tasks/${savedName}`;
+      const savedName = `${id}-${Date.now()}-${sanitizeUploadFilename(file.name)}`;
+      const { publicPath } = await saveUploadFromFile("ops-tasks", savedName, file);
 
       const [inserted] = await tx`
         INSERT INTO rm.ops_task_attachments (

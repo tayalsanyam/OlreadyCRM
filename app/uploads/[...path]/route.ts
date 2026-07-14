@@ -1,15 +1,5 @@
-import { readFile, stat } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
-
-const MIME_BY_EXT: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".webp": "image/webp",
-  ".gif": "image/gif",
-  ".pdf": "application/pdf",
-};
+import { readUploadFile } from "@/lib/file-storage";
 
 export async function GET(
   _request: Request,
@@ -21,22 +11,15 @@ export async function GET(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const filePath = path.join(process.cwd(), "uploads", rel);
-  try {
-    const info = await stat(filePath);
-    if (!info.isFile()) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-    const bytes = await readFile(filePath);
-    const ext = path.extname(filePath).toLowerCase();
-    const mime = MIME_BY_EXT[ext] ?? "application/octet-stream";
-    return new NextResponse(bytes, {
-      headers: {
-        "Content-Type": mime,
-        "Cache-Control": "private, max-age=3600",
-      },
-    });
-  } catch {
+  const file = await readUploadFile(`/uploads/${rel}`);
+  if (!file) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+
+  return new NextResponse(file.bytes, {
+    headers: {
+      "Content-Type": file.mimeType,
+      "Cache-Control": "private, max-age=3600",
+    },
+  });
 }

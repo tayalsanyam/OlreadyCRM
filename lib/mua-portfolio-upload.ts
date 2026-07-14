@@ -1,10 +1,9 @@
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import path from "node:path";
 import {
   isLocalPortfolioPath,
   MAX_MUA_PORTFOLIO_BYTES,
   MUA_PORTFOLIO_MIME_TYPES,
 } from "@/lib/mua-portfolio-shared";
+import { deleteUploadFile, sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 
 export {
   MAX_MUA_PORTFOLIO_BYTES,
@@ -24,26 +23,11 @@ export async function saveMuaPortfolioFile(
     throw new Error("Image must be under 8 MB");
   }
 
-  const uploadDir = path.join(process.cwd(), "uploads", "mua-portfolio");
-  await mkdir(uploadDir, { recursive: true });
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const savedName = `${muaId}-${Date.now()}-${safeName}`;
-  const diskPath = path.join(uploadDir, savedName);
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(diskPath, bytes);
-
-  return {
-    publicPath: `/uploads/mua-portfolio/${savedName}`,
-    mime,
-  };
+  const savedName = `${muaId}-${Date.now()}-${sanitizeUploadFilename(file.name)}`;
+  return saveUploadFromFile("mua-portfolio", savedName, file);
 }
 
 export async function deleteLocalPortfolioFile(mediaUrl: string): Promise<void> {
   if (!isLocalPortfolioPath(mediaUrl)) return;
-  const rel = mediaUrl.replace(/^\/uploads\//, "");
-  try {
-    await unlink(path.join(process.cwd(), "uploads", rel));
-  } catch {
-    // file may already be gone
-  }
+  await deleteUploadFile(mediaUrl);
 }

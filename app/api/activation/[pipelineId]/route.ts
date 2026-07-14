@@ -18,8 +18,7 @@ import {
 import { applyActivationSendBack } from "@/lib/sales-activation-send-back";
 import { readStoredBoolean } from "@/lib/sales-plan-details";
 import { assertValidPlanRm, fetchPlanRmOptionsForRegions } from "@/lib/plan-rm";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 
 type Body = {
   step?:
@@ -260,14 +259,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ pip
         throw new Error("Complete verification, invoice, and contract generation before contract upload");
       }
 
-      const uploadDir = path.join(process.cwd(), "uploads", "contracts");
-      await mkdir(uploadDir, { recursive: true });
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const savedName = `${pipelineId}-${Date.now()}-${safeName}`;
-      const filePath = path.join(uploadDir, savedName);
-      const bytes = Buffer.from(await file.arrayBuffer());
-      await writeFile(filePath, bytes);
-      const contractPath = `/uploads/contracts/${savedName}`;
+      const savedName = `${pipelineId}-${Date.now()}-${sanitizeUploadFilename(file.name)}`;
+      const { publicPath: contractPath } = await saveUploadFromFile("contracts", savedName, file);
 
       await tx`
         UPDATE sales.activation_log

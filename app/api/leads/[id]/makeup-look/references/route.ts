@@ -1,8 +1,7 @@
-import { mkdir, unlink, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 import { sql } from "@/db/index";
 import { requireSession } from "@/lib/api-auth";
+import { deleteUploadFile, sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 import { canAccessLead, getLeadForAccess } from "@/lib/lead-access";
 import { upsertMakeupLookProfile, getMakeupLookProfile } from "@/lib/makeup-look-db";
 import {
@@ -88,14 +87,8 @@ export async function POST(
     );
   }
 
-  const uploadDir = path.join(process.cwd(), "uploads", "makeup-references");
-  await mkdir(uploadDir, { recursive: true });
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const savedName = `${id}-${Date.now()}-${safeName}`;
-  const diskPath = path.join(uploadDir, savedName);
-  const bytes = Buffer.from(await file.arrayBuffer());
-  await writeFile(diskPath, bytes);
-  const publicPath = `/uploads/makeup-references/${savedName}`;
+  const savedName = `${id}-${Date.now()}-${sanitizeUploadFilename(file.name)}`;
+  const { publicPath } = await saveUploadFromFile("makeup-references", savedName, file);
 
   const [inserted] = await sql<MakeupReferenceImage[]>`
     INSERT INTO lead_makeup_reference_images (
@@ -167,12 +160,7 @@ export async function DELETE(
     WHERE id = ${imageId}::uuid AND lead_id = ${id}::uuid
   `;
 
-  const rel = row.filePath.replace(/^\/uploads\//, "");
-  try {
-    await unlink(path.join(process.cwd(), "uploads", rel));
-  } catch {
-    // file may already be gone
-  }
+  await deleteUploadFile(row.filePath);
 
   const [remaining] = await sql<{ count: number }[]>`
     SELECT COUNT(*)::int AS count

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { withTransaction } from "@/db/index";
 import { requireGrievanceAccess, requireSession } from "@/lib/api-auth";
+import { sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 import { getTicketById } from "@/lib/ticket-create";
 import { hasTicketViewAccess } from "@/lib/ticket-access";
 
@@ -91,14 +90,8 @@ export async function POST(request: Request, { params }: RouteParams) {
         return { limitReached: true as const };
       }
 
-      const uploadDir = path.join(process.cwd(), "uploads", "tickets");
-      await mkdir(uploadDir, { recursive: true });
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const savedName = `${id}-${Date.now()}-${safeName}`;
-      const diskPath = path.join(uploadDir, savedName);
-      const bytes = Buffer.from(await file.arrayBuffer());
-      await writeFile(diskPath, bytes);
-      const publicPath = `/uploads/tickets/${savedName}`;
+      const savedName = `${id}-${Date.now()}-${sanitizeUploadFilename(file.name)}`;
+      const { publicPath } = await saveUploadFromFile("tickets", savedName, file);
 
       const [inserted] = await tx`
         INSERT INTO support.ticket_attachments (
