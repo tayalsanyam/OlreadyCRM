@@ -1,5 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 import { NextResponse } from "next/server";
 import { withTransaction } from "@/db/index";
 import { requireRoles } from "@/lib/api-auth";
@@ -81,14 +80,8 @@ export async function POST(
 
       let contractUrl: string | null = null;
       if (file instanceof File) {
-        const uploadDir = path.join(process.cwd(), "uploads", "contracts");
-        await mkdir(uploadDir, { recursive: true });
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const savedName = `${pipelineId}-${Date.now()}-${safeName}`;
-        const filePath = path.join(uploadDir, savedName);
-        const bytes = Buffer.from(await file.arrayBuffer());
-        await writeFile(filePath, bytes);
-        contractUrl = `/uploads/contracts/${savedName}`;
+        const savedName = `${pipelineId}-${Date.now()}-${sanitizeUploadFilename(file.name)}`;
+        contractUrl = (await saveUploadFromFile("contracts", savedName, file)).publicPath;
 
         await tx`
           UPDATE sales.activation_log

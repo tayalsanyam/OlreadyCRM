@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { withTransaction } from "@/db/index";
 import { requireSession } from "@/lib/api-auth";
+import { sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 import { hasCareTaskAccess } from "@/lib/ticket-access";
 import {
   MAX_TICKET_ATTACHMENTS,
@@ -58,14 +57,8 @@ export async function POST(request: Request, { params }: RouteParams) {
         return { limitReached: true as const };
       }
 
-      const uploadDir = path.join(process.cwd(), "uploads", "tickets");
-      await mkdir(uploadDir, { recursive: true });
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const savedName = `${task.ticketId}-${Date.now()}-${safeName}`;
-      const diskPath = path.join(uploadDir, savedName);
-      const bytes = Buffer.from(await file.arrayBuffer());
-      await writeFile(diskPath, bytes);
-      const publicPath = `/uploads/tickets/${savedName}`;
+      const savedName = `${task.ticketId}-${Date.now()}-${sanitizeUploadFilename(file.name)}`;
+      const { publicPath } = await saveUploadFromFile("tickets", savedName, file);
 
       const category = String(form.get("category") ?? "staff_document");
 

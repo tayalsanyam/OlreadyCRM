@@ -1,6 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import type { TransactionSql } from "@/db/index";
+import { sanitizeUploadFilename, saveUploadFromFile } from "@/lib/file-storage";
 import { normalizePhone } from "@/lib/phone";
 import { toIsoTimestamp } from "@/lib/utils";
 import {
@@ -256,9 +255,6 @@ export async function savePublicIntakeAttachments(
   `;
   const existing = countRow?.count ?? 0;
 
-  const uploadDir = path.join(process.cwd(), "uploads", "tickets");
-  await mkdir(uploadDir, { recursive: true });
-
   for (const file of files) {
     const validationError = validateIntakeFile(file);
     if (validationError) {
@@ -270,13 +266,8 @@ export async function savePublicIntakeAttachments(
       break;
     }
 
-    const mime = file.type || "application/octet-stream";
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const savedName = `${ticketId}-${Date.now()}-${saved}-${safeName}`;
-    const diskPath = path.join(uploadDir, savedName);
-    const bytes = Buffer.from(await file.arrayBuffer());
-    await writeFile(diskPath, bytes);
-    const publicPath = `/uploads/tickets/${savedName}`;
+    const savedName = `${ticketId}-${Date.now()}-${saved}-${sanitizeUploadFilename(file.name)}`;
+    const { publicPath, mime } = await saveUploadFromFile("tickets", savedName, file);
 
     await tx`
       INSERT INTO support.ticket_attachments (
