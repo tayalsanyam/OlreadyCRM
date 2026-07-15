@@ -247,6 +247,15 @@ export function StageChangePanel({
     if (toStage === "Deal Closed" && discountValue > 0 && netDealPrice + 0.009 < priorPaid) {
       missing.push("Net deal price cannot be below amount already received");
     }
+    if (toStage === "Deal Closed" && receivedNow > 0) {
+      const dealAmt = discountValue > 0 ? netDealPrice : dealPrice;
+      const remaining = Math.max(0, dealAmt - priorPaid);
+      if (receivedNow > remaining + 0.009) {
+        missing.push(
+          `Payment cannot exceed remaining balance (₹${remaining.toLocaleString("en-IN")})`,
+        );
+      }
+    }
     return missing;
   }, [
     validTarget,
@@ -261,6 +270,8 @@ export function StageChangePanel({
     discountReason,
     netDealPrice,
     priorPaid,
+    receivedNow,
+    dealPrice,
   ]);
 
   async function submit() {

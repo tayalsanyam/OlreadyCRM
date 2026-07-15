@@ -664,6 +664,13 @@ try {
   );
   await sql.unsafe(batch097);
   console.log("Migration 097_rename_lapsed_to_re_engage applied");
+
+  const batch104 = readFileSync(
+    join(__dirname, "../db/migrations/104_fix_mua_0038_duplicate_payment.sql"),
+    "utf8"
+  );
+  await sql.unsafe(batch104);
+  console.log("RM migration 104_fix_mua_0038_duplicate_payment applied");
 } finally {
   await sql.end();
 }
