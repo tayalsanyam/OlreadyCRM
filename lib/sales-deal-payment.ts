@@ -53,6 +53,26 @@ export function paymentBalanceLabel(quotedAmount: number, totalPaid: number): st
   return `${formatInr(totalPaid)} received · ${formatInr(balance)} balance on ${formatInr(quotedAmount)}`;
 }
 
+export function remainingDealBalance(quotedAmount: number, priorPaid: number): number {
+  if (quotedAmount <= 0) return 0;
+  return Math.max(0, quotedAmount - priorPaid);
+}
+
+/** Block when a new receipt exceeds what is still owed on the deal. */
+export function validatePaymentAgainstBalance(
+  newPayment: number,
+  priorPaid: number,
+  quotedAmount: number,
+): string | null {
+  if (!Number.isFinite(newPayment) || newPayment <= 0) return null;
+  if (quotedAmount <= 0) return null;
+  const remaining = remainingDealBalance(quotedAmount, priorPaid);
+  if (newPayment > remaining + 0.009) {
+    return `Payment cannot exceed remaining balance (${formatInr(remaining)})`;
+  }
+  return null;
+}
+
 export function isPaymentCloseIntent(toStage: PipelineStage): boolean {
   return toStage === "Deal Closed";
 }
