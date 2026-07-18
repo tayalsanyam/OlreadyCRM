@@ -36,7 +36,15 @@ export async function GET(request: Request) {
   const eventTo = searchParams.get("eventTo");
 
   if (session.role === "regionalRm") {
-    region = session.region ?? region ?? "north";
+    const allowed =
+      session.regions?.length
+        ? session.regions
+        : session.region
+          ? [session.region]
+          : [];
+    if (region && allowed.length && !allowed.includes(region)) {
+      region = null;
+    }
   }
 
   if (USE_MOCK) {

@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql, generateTaskDisplayId, withTransaction } from "@/db/index";
 import { requireSession } from "@/lib/api-auth";
-import { ensureCommissionCollectionTasks } from "@/lib/commission-collection-tasks";
-import { ensureLeadIntakeTasksForStaff } from "@/lib/lead-intake-tasks";
-import { reconcileDueLeads } from "@/lib/lead-lifecycle";
 import { USE_MOCK } from "@/lib/mock-data";
 import { mockStore } from "@/lib/mock-store";
 import { fromDbPushStage, fromDbTaskType, fromDbTier, fromDbStatus, fromDbUrgencyBand } from "@/lib/db-mappers";
@@ -28,21 +25,6 @@ export async function GET(request: Request) {
       data: taskListResponse(mine),
       error: null,
     });
-  }
-
-  try {
-    await withTransaction(async (tx) => {
-      await reconcileDueLeads(tx);
-      await ensureCommissionCollectionTasks(tx, {
-        role: auth.session.role,
-        userId: auth.session.userId,
-      });
-      if (auth.session.role === "regionalRm" || auth.session.role === "commissionRm") {
-        await ensureLeadIntakeTasksForStaff(tx, auth.session.userId);
-      }
-    });
-  } catch (error) {
-    return apiErrorResponse(error, "Failed to sync tasks");
   }
 
   let rows: (Task & {

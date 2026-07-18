@@ -27,12 +27,12 @@ import { LeadQuickContact } from "@/components/leads/LeadQuickContact";
 import { MyMonthCard } from "@/components/rm/MyMonthCard";
 import { PipelineHealthKanban } from "@/components/leads/PipelineHealthKanban";
 import { DateRangeFilter } from "@/components/ui/DateRangeFilter";
+import { formatLeadRegion } from "@/lib/mua-region";
 import { toSearchParams, valueFromSearchParams } from "@/lib/date-range";
 import type { DateRangeFilterValue, PipelineHealthLead } from "@/lib/types";
 import type {
   LeadFull,
   MuaPushStage,
-  Region,
   UrgencyBand,
   BudgetTier,
   UserRole,
@@ -54,13 +54,6 @@ const VIEW_STORAGE_KEY_COMMISSION = "olready_commission_view";
 const PER_LEAD_CAP = 3;
 const ASSIGNMENT_WINDOW_DAYS = 45;
 const PAGE_SIZE = 200;
-
-const REGIONS: { id: Region; label: string }[] = [
-  { id: "north", label: "North" },
-  { id: "east", label: "East" },
-  { id: "west", label: "West" },
-  { id: "south", label: "South" },
-];
 
 const TIERS: BudgetTier[] = ["tier1", "tier2", "tier3", "tier4"];
 const BANDS: UrgencyBand[] = ["critical", "hot", "active", "longShelf"];
@@ -131,10 +124,6 @@ type SortKey = "eventDate" | "days" | "window" | "lastTouch";
 type SortDir = "asc" | "desc";
 
 interface RmQueueClientProps {
-  defaultRegion?: Region;
-  /** When set, only these region tabs are shown (RM multi-region). */
-  allowedRegions?: Region[];
-  lockRegion?: boolean;
   userRole?: UserRole;
   /** RM assigned queue vs commission RM queue */
   queueVariant?: "rm" | "commission";
@@ -334,7 +323,14 @@ function KanbanCard({
         </span>
       </div>
       <p className="mt-1 truncate text-xs text-slate-muted">
-        {lead.city}
+        <span className="inline-flex flex-wrap items-center gap-1.5">
+          <span>{lead.city}</span>
+          {lead.region ? (
+            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+              {formatLeadRegion(lead.region)}
+            </span>
+          ) : null}
+        </span>
         <span className={cn(" · ", daysClass)}>{lead.daysToEvent}d to event</span>
       </p>
       {!isCommission ? (
@@ -368,16 +364,10 @@ function KanbanCard({
 }
 
 export function RmQueueClient({
-  defaultRegion = "north",
-  allowedRegions,
-  lockRegion = false,
   userRole = "regionalRm",
   queueVariant = "rm",
   leadBasePath = "/rm/leads",
 }: RmQueueClientProps) {
-  const visibleRegions = allowedRegions?.length
-    ? REGIONS.filter((r) => allowedRegions.includes(r.id))
-    : REGIONS;
   const isCommission = queueVariant === "commission";
   const viewStorageKey = isCommission
     ? VIEW_STORAGE_KEY_COMMISSION
@@ -386,10 +376,6 @@ export function RmQueueClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  /** null = all regions (commission default). */
-  const [region, setRegion] = useState<Region | null>(
-    isCommission ? null : defaultRegion
-  );
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
@@ -469,7 +455,6 @@ export function RmQueueClient({
         page: String(pageNum),
         pageSize: String(PAGE_SIZE),
       });
-      if (region) params.set("region", region);
       const { eventFrom, eventTo } = toSearchParams(dateRange);
       if (eventFrom) params.set("eventFrom", eventFrom);
       if (eventTo) params.set("eventTo", eventTo);
@@ -545,14 +530,13 @@ export function RmQueueClient({
       setLoading(false);
       setLoadingMore(false);
     },
-    [region, dateRange, portalFilter, toast, queueStatus]
+    [dateRange, portalFilter, toast, queueStatus]
   );
 
   const fetchHealth = useCallback(async () => {
     setHealthLoading(true);
     try {
       const params = new URLSearchParams();
-      if (region) params.set("region", region);
       for (const t of selectedTiers) params.append("tier", t);
       const { eventFrom, eventTo } = toSearchParams(dateRange);
       if (eventFrom) params.set("eventFrom", eventFrom);
@@ -578,13 +562,13 @@ export function RmQueueClient({
     } finally {
       setHealthLoading(false);
     }
-  }, [region, selectedTiers, dateRange, toast]);
+  }, [selectedTiers, dateRange, toast]);
 
   useEffect(() => {
     setLeads([]);
     setPage(1);
     void fetchPage(1, false);
-  }, [region, portalFilter, fetchPage]);
+  }, [portalFilter, fetchPage]);
 
   useEffect(() => {
     if (view === "health") void fetchHealth();
@@ -624,13 +608,7 @@ export function RmQueueClient({
   }, [view, loadNextPage, leads.length]);
 
   const filteredBase = useMemo(() => {
-    let list = isCommission
-      ? leads
-      : leads.filter(
-          (l) =>
-            region != null &&
-            String(l.region).toLowerCase() === region.toLowerCase()
-        );
+    let list = leads;
     if (debouncedSearch) {
       list = list.filter((l) => matchesSearch(l, debouncedSearch));
     }
@@ -648,11 +626,9 @@ export function RmQueueClient({
     return list;
   }, [
     leads,
-    region,
     debouncedSearch,
     selectedTiers,
     selectedStage,
-    isCommission,
   ]);
 
   const filtered = useMemo(() => {
@@ -829,46 +805,6 @@ export function RmQueueClient({
         </button>
       </div>
 
-      {/* Region tabs */}
-      <div className="flex gap-0 border-b border-slate-200">
-        {isCommission && (
-          <button
-            type="button"
-            onClick={() => setRegion(null)}
-            className={cn(
-              "px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-              region === null
-                ? "border-brand text-brand"
-                : "border-transparent text-slate-muted hover:text-text"
-            )}
-          >
-            All
-          </button>
-        )}
-        {visibleRegions.map((r) => {
-          const isActive = region === r.id;
-          const disabled = lockRegion && r.id !== defaultRegion;
-          return (
-            <button
-              key={r.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => !disabled && setRegion(r.id)}
-              className={cn(
-                "px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
-                isActive
-                  ? "border-brand text-brand"
-                  : disabled
-                    ? "border-transparent text-slate-300 cursor-not-allowed"
-                    : "border-transparent text-slate-muted hover:text-text"
-              )}
-            >
-              {r.label}
-            </button>
-          );
-        })}
-      </div>
-
       {fetchError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           {fetchError}. Log out and back in, or restart the dev server if the database
@@ -916,10 +852,7 @@ export function RmQueueClient({
             <span className="text-slate-300">·</span>
           </>
         )}
-        <span className="text-slate-muted">
-          {summary.total} total leads
-          {region ? ` in ${region}` : isCommission ? " (all regions)" : " this region"}
-        </span>
+        <span className="text-slate-muted">{summary.total} assigned leads</span>
         {selectedBand && (
           <button
             type="button"
@@ -1137,7 +1070,6 @@ export function RmQueueClient({
       ) : (
         <PipelineHealthKanban
           leads={healthLeads.filter((l) => {
-            if (region && l.region !== region) return false;
             if (debouncedSearch && !matchesSearch(l, debouncedSearch)) return false;
             if (selectedTiers.size > 0 && !selectedTiers.has(l.budgetTier as BudgetTier))
               return false;
@@ -1312,7 +1244,16 @@ function ListView({
                         <td className="px-2 font-mono text-xs text-slate-muted">
                           {lead.displayId}
                         </td>
-                        <td className="px-2 text-slate-muted">{lead.city}</td>
+                        <td className="px-2 text-slate-muted">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span>{lead.city}</span>
+                            {lead.region ? (
+                              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                {formatLeadRegion(lead.region)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </td>
                         <td className="px-2 py-2.5 text-xs text-slate-muted whitespace-nowrap align-top">
                           {getLeadStatusLabel(lead)}
                         </td>

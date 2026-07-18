@@ -3,8 +3,6 @@ import type { PaginatedResult } from "@/db/index";
 import { requireSession } from "@/lib/api-auth";
 import { apiErrorResponse } from "@/lib/api-error-response";
 import { fetchQueuePage } from "@/lib/leads-queue-query";
-import { reconcileDueLeads } from "@/lib/lead-lifecycle";
-import { ensureLeadIntakeTasksForStaff } from "@/lib/lead-intake-tasks";
 import { withTransaction } from "@/db/index";
 import { USE_MOCK } from "@/lib/mock-data";
 import { mockStore } from "@/lib/mock-store";
@@ -94,7 +92,7 @@ export async function GET(request: Request) {
       if (region && allowed.includes(region as (typeof allowed)[number])) {
         queueRegion = region;
       } else {
-        queueRegion = allowed[0] ?? session.region ?? region ?? "north";
+        queueRegion = null;
       }
       assignedRmId = session.userId;
       effectiveStatus = dbStatus;
@@ -110,12 +108,8 @@ export async function GET(request: Request) {
       );
     }
 
-    const { rows, total } = await withTransaction(async (tx) => {
-      await reconcileDueLeads(tx);
-      if (session.role === "regionalRm" || session.role === "commissionRm") {
-        await ensureLeadIntakeTasksForStaff(tx, session.userId);
-      }
-      return fetchQueuePage(tx, {
+    const { rows, total } = await withTransaction(async (tx) =>
+      fetchQueuePage(tx, {
         dbStatus: effectiveStatus,
         region: queueRegion,
         assignedRmId,
@@ -128,8 +122,8 @@ export async function GET(request: Request) {
           session.role === "commissionRm" ? session.userId : null,
         commissionStaffId:
           session.role === "commissionRm" ? session.userId : null,
-      });
-    });
+      })
+    );
 
     let normalized = rows.map((r) => normalizeLeadFull(r));
     if (session.role === "regionalRm") {

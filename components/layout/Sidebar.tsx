@@ -27,6 +27,8 @@ import {
   Target,
   ChevronDown,
   ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -72,6 +74,12 @@ const ICONS = {
 } as const;
 
 const DAY_END_NAV: NavItem = { href: "/day-end", label: "Day End Report", icon: ICONS.dayEnd };
+const SIDEBAR_COLLAPSED_KEY = "olready_sidebar_collapsed";
+
+function readSidebarCollapsed(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+}
 
 function withDayEndNav(sections: NavSection[], role: UserRole): NavSection[] {
   if (!isDayEndRequiredRole(role)) return sections;
@@ -346,6 +354,18 @@ export function Sidebar({ user, unreadCount = 0 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [unassignedCount, setUnassignedCount] = useState(0);
   const [openAdminGroups, setOpenAdminGroups] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setCollapsed(readSidebarCollapsed());
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((current) => {
+      const next = !current;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
   const sections = withDayEndNav(
     withNotifications(NAV_BY_ROLE[user.role]).map((section) => ({
     ...section,
@@ -479,11 +499,31 @@ export function Sidebar({ user, unreadCount = 0 }: SidebarProps) {
     >
       <div
         className={cn(
-          "px-4 py-5 font-bold tracking-tight",
-          collapsed && "px-2 text-center text-xs"
+          "flex items-center gap-2 border-b border-white/10 px-3 py-4",
+          collapsed ? "flex-col justify-center px-2 py-3" : ""
         )}
       >
-        {collapsed ? "OL" : "Olready CRM"}
+        <div
+          className={cn(
+            "min-w-0 flex-1 font-bold tracking-tight",
+            collapsed && "text-center text-xs"
+          )}
+        >
+          {collapsed ? "OL" : "Olready CRM"}
+        </div>
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          className="shrink-0 rounded-lg p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <PanelLeftOpen className="h-4 w-4" />
+          ) : (
+            <PanelLeftClose className="h-4 w-4" />
+          )}
+        </button>
       </div>
       <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-2">
         {!collapsed && (user.role === "admin" || user.role === "owner") ? (
@@ -598,11 +638,11 @@ export function Sidebar({ user, unreadCount = 0 }: SidebarProps) {
       </nav>
       <button
         type="button"
-        onClick={() => setCollapsed((c) => !c)}
+        onClick={toggleCollapsed}
         className="border-t border-white/10 px-4 py-3 text-left text-xs text-white/60 hover:text-white"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
-        {collapsed ? "→" : "← Collapse"}
+        {collapsed ? "Expand menu" : "Collapse menu"}
       </button>
     </aside>
   );

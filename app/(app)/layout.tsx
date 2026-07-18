@@ -57,7 +57,7 @@ export default async function AppLayout({
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
       <SearchProvider user={session} />
-      <AppShellClient />
+      <AppShellClient user={session} />
     </div>
   );
 }

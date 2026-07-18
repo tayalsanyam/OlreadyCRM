@@ -22,6 +22,12 @@ export function formatRegions(regions: Region[] | null | undefined): string {
   return regions.map((r) => REGION_OPTIONS.find((o) => o.value === r)?.label ?? r).join(", ");
 }
 
+export function formatLeadRegion(region: Region | string | null | undefined): string {
+  if (!region) return "—";
+  const key = String(region).toLowerCase() as Region;
+  return REGION_OPTIONS.find((o) => o.value === key)?.label ?? String(region);
+}
+
 /** Map a city name to a region when regions were not set explicitly. */
 export function inferRegionFromCity(city: string): Region | null {
   const norm = city.trim().toLowerCase();
