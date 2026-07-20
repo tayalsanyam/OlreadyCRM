@@ -22,6 +22,7 @@ import {
 import type { MuaPushWithDetails, UrgencyBand } from "@/lib/types";
 import { USE_MOCK } from "@/lib/mock-data";
 import { mockStore } from "@/lib/mock-store";
+import { sendMuaPushNotificationEmail } from "@/lib/rm-mua-push-email";
 
 export async function GET(
   _request: Request,
@@ -270,5 +271,15 @@ export async function POST(
     return push.id;
   });
 
-  return NextResponse.json({ data: { id: pushId }, error: null });
+  const emailNotification = await sendMuaPushNotificationEmail({
+    leadId: id,
+    muaId: body.muaId,
+    eventIds: body.eventIds,
+    actorId: session.userId,
+  });
+
+  return NextResponse.json({
+    data: { id: pushId, emailNotification },
+    error: null,
+  });
 }

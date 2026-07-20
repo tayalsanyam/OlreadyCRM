@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Select } from "@/components/ui/Select";
 import { SlideOver } from "@/components/ui/SlideOver";
+import { useToast } from "@/components/ui/Toast";
 import { Badge } from "@/components/ui/Badge";
 import { CapBar } from "@/components/muas/CapBar";
 import { MuaQuickContact } from "@/components/muas/MuaQuickContact";
@@ -164,6 +165,7 @@ export function PushMuaSlideOver({
   pushBlockedMessage,
   onPushed,
 }: PushMuaSlideOverProps) {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [muas, setMuas] = useState<AvailableMua[]>([]);
   const [cityOptions, setCityOptions] = useState<string[]>([]);
@@ -459,7 +461,13 @@ export function PushMuaSlideOver({
         bypassReason: bypass,
       }),
     });
-    const json = (await res.json()) as { error: string | null };
+    const json = (await res.json()) as {
+      error: string | null;
+      data?: {
+        id: string;
+        emailNotification?: { status: string; message?: string };
+      };
+    };
     setSubmitting(false);
     if (!res.ok) {
       if (json.error?.includes("Bypass")) {
@@ -468,6 +476,12 @@ export function PushMuaSlideOver({
       }
       setError(json.error ?? "Push failed");
       return;
+    }
+    const emailNotification = json.data?.emailNotification;
+    if (emailNotification?.status === "missing_email") {
+      toast(emailNotification.message ?? "Email ID missing", "error");
+    } else if (emailNotification?.status === "sent") {
+      toast("Email sent to MUA", "success");
     }
     setBypassOpen(false);
     onPushed();

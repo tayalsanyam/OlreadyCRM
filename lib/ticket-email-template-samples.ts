@@ -424,6 +424,44 @@ ${SIGNOFF}`,
     approvalTier: 0,
     requiresAdminApproval: false,
   },
+  {
+    category: "rm_mua_push",
+    name: "RM Push — Privy bride share",
+    subjectTemplate: "{{mua_name}} - Privy - Bride Push",
+    bodyTemplate: `Dear {{mua_name}},
+
+We are sharing a bride profile with you:
+
+Name: {{bride_name}}
+City: {{city}}
+Budget: {{budget_line}}
+
+Events:
+{{events_block}}{{makeup_details}}
+
+{{disclaimer}}`,
+    approvalTier: 0,
+    requiresAdminApproval: false,
+  },
+  {
+    category: "rm_mua_push",
+    name: "RM Push — Recommended bride",
+    subjectTemplate: "{{mua_name}} - {{plan_name}} - Recommended Bride",
+    bodyTemplate: `Dear {{mua_name}},
+
+We have a recommended bride for you:
+
+Name: {{bride_name}}
+City: {{city}}
+Budget: {{budget_line}}
+
+Events:
+{{events_block}}{{makeup_details}}
+
+{{disclaimer}}`,
+    approvalTier: 0,
+    requiresAdminApproval: false,
+  },
 ];
 
 export const TICKET_EMAIL_TEMPLATE_CATEGORY_OPTIONS = [
@@ -441,5 +479,6 @@ export const TICKET_EMAIL_TEMPLATE_CATEGORY_OPTIONS = [
   { value: "rm_relationship", label: "MUA — RM relationship" },
   { value: "sales_promise", label: "MUA — Sales promise" },
   { value: "profile_query", label: "MUA — Profile / plan query" },
+  { value: "rm_mua_push", label: "RM — MUA push notification" },
   { value: "other", label: "Other" },
 ];

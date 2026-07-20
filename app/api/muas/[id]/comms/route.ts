@@ -92,19 +92,19 @@ export async function GET(
   `;
 
   const data: MuaCommRow[] = [...rows, ...salesRows]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 100)
     .map((r) => ({
       id: r.id,
-      leadId: r.leadId,
-      entryType: normalizeEntryType(String(r.entryType)),
+      leadId: r.lead_id,
+      entryType: normalizeEntryType(String(r.entry_type)),
       description: String(r.description ?? ""),
-      actorId: r.actorId,
-      actorName: r.actorName ?? (r.metadata?.staffName as string | undefined) ?? null,
+      actorId: r.actor_id,
+      actorName: r.actor_name ?? (r.metadata?.staffName as string | undefined) ?? null,
       metadata: (r.metadata ?? {}) as Record<string, unknown>,
-      createdAt: r.createdAt,
-      leadName: r.leadName,
-      leadDisplayId: r.leadDisplayId,
+      createdAt: r.created_at,
+      leadName: r.lead_name,
+      leadDisplayId: r.lead_display_id,
     }));
 
   return NextResponse.json({ data, error: null });

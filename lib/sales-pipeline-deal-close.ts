@@ -5,7 +5,6 @@ import { createNotification } from "@/lib/notifications";
 import {
   resolvePaymentCloseStage,
   sumPipelinePayments,
-  validatePaymentAgainstBalance,
 } from "@/lib/sales-deal-payment";
 import { upsertOnboardingPlanDetails } from "@/lib/sales-onboarding-upsert";
 import { ONBOARDING_STAGE } from "@/lib/sales-pipeline-stages";
@@ -56,21 +55,6 @@ export async function executePipelineDealClose(
   const { pipelineId, actorId, fromStage, note, pipeline } = opts;
   const pipelineRef = `[PIPE:${pipelineId}]`;
 
-  const quotedAmount = opts.quotedAmount;
-  if (quotedAmount <= 0) {
-    throw Object.assign(new Error("Deal price is required — set quoted amount at Confirm"), { status: 400 });
-  }
-
-  const priorPaid = await sumPipelinePayments(tx, pipelineId);
-  const overpaymentError = validatePaymentAgainstBalance(
-    opts.paymentDetails.amount,
-    priorPaid,
-    quotedAmount,
-  );
-  if (overpaymentError) {
-    throw Object.assign(new Error(overpaymentError), { status: 400 });
-  }
-
   if (opts.planDetails) {
     await upsertOnboardingPlanDetails(tx, pipelineId, opts.planDetails, {});
   }
@@ -86,7 +70,12 @@ export async function executePipelineDealClose(
     )
   `;
 
-  const totalPaid = priorPaid + opts.paymentDetails.amount;
+  const quotedAmount = opts.quotedAmount;
+  if (quotedAmount <= 0) {
+    throw Object.assign(new Error("Deal price is required — set quoted amount at Confirm"), { status: 400 });
+  }
+
+  const totalPaid = await sumPipelinePayments(tx, pipelineId);
   const effectiveStage = resolvePaymentCloseStage(totalPaid, quotedAmount);
   if (effectiveStage === "Part Payment" && !opts.nextTouchPoint) {
     throw Object.assign(new Error("Next touch point is required while balance remains on the deal"), {

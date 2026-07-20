@@ -665,12 +665,12 @@ try {
   await sql.unsafe(batch097);
   console.log("Migration 097_rename_lapsed_to_re_engage applied");
 
-  const batch104 = readFileSync(
-    join(__dirname, "../db/migrations/104_fix_mua_0038_duplicate_payment.sql"),
+  const batch105 = readFileSync(
+    join(__dirname, "../db/migrations/105_rm_mua_push_email_templates.sql"),
     "utf8"
   );
-  await sql.unsafe(batch104);
-  console.log("RM migration 104_fix_mua_0038_duplicate_payment applied");
+  await sql.unsafe(batch105);
+  console.log("RM migration 105_rm_mua_push_email_templates applied");
 } finally {
   await sql.end();
 }
