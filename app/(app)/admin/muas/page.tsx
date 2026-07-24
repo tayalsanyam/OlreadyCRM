@@ -42,6 +42,7 @@ import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/Table";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { resolveMuaRegions, formatRegions } from "@/lib/mua-region";
+import { MUA_SOURCE_OPTIONS, type MuaSource } from "@/lib/mua-source";
 import { salesPipelineMuaTypeLabel } from "@/lib/sales-pipeline-labels";
 import { PLAN_TIER_LABELS, type PlanTier, type Region } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
@@ -279,6 +280,7 @@ export default function AdminMuasPage() {
   const [muas, setMuas] = useState<AdminMuaListItem[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [regionFilter, setRegionFilter] = useState<Region[]>([]);
+  const [sourceFilter, setSourceFilter] = useState<MuaSource[]>([]);
   const [tierFilter, setTierFilter] = useState("");
   const [expiryStatusFilter, setExpiryStatusFilter] = useState<
     "all" | "active" | "expiring" | "expired" | "none"
@@ -369,6 +371,7 @@ export default function AdminMuasPage() {
         if (appliedSegment !== "all") params.set("segment", appliedSegment);
         if (appliedTag !== "all") params.set("tag", appliedTag);
         regionFilter.forEach((r) => params.append("region", r));
+        sourceFilter.forEach((s) => params.append("source", s));
         if (tierFilter) params.set("tier", tierFilter);
         if (expiryStatusFilter !== "all") params.set("expiryStatus", expiryStatusFilter);
         if (rosterStatusFilter !== "all") params.set("rosterStatus", rosterStatusFilter);
@@ -408,6 +411,7 @@ export default function AdminMuasPage() {
       appliedSegment,
       appliedTag,
       regionFilter,
+      sourceFilter,
       tierFilter,
       expiryStatusFilter,
       rosterStatusFilter,
@@ -575,6 +579,13 @@ export default function AdminMuasPage() {
       setSearchQ(qRaw);
       setAppliedSearch(qRaw);
     }
+
+    const sourceRaw = searchParams
+      .getAll("source")
+      .filter((s): s is MuaSource => (MUA_SOURCE_OPTIONS as readonly string[]).includes(s));
+    if (sourceRaw.length > 0) {
+      setSourceFilter(sourceRaw);
+    }
   }, [searchParams]);
 
   const importProfile = useMemo((): MuaImportProfile => {
@@ -616,6 +627,7 @@ export default function AdminMuasPage() {
     appliedSegment,
     appliedTag,
     regionFilter,
+    sourceFilter,
     tierFilter,
     expiryStatusFilter,
     rosterStatusFilter,
@@ -683,6 +695,7 @@ export default function AdminMuasPage() {
 
   function clearClientFilters() {
     setRegionFilter([]);
+    setSourceFilter([]);
     setTierFilter("");
     setExpiryStatusFilter("all");
     setRosterStatusFilter("active");
@@ -793,6 +806,7 @@ export default function AdminMuasPage() {
 
   const hasClientFilters =
     regionFilter.length > 0 ||
+    sourceFilter.length > 0 ||
     Boolean(tierFilter) ||
     expiryStatusFilter !== "all" ||
     rosterStatusFilter !== "active" ||
@@ -1045,6 +1059,8 @@ export default function AdminMuasPage() {
             }}
             region={regionFilter}
             onRegionChange={setRegionFilter}
+            sources={sourceFilter}
+            onSourcesChange={setSourceFilter}
             tier={tierFilter}
             onTierChange={setTierFilter}
             expiryStatus={expiryStatusFilter}

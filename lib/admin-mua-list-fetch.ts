@@ -313,6 +313,10 @@ export async function fetchAdminMuaListPage(
         )
       )
       AND (
+        ${filters.sources.length === 0}
+        OR m.source = ANY(${filters.sources}::text[])
+      )
+      AND (
         ${filters.addedDateBasis}::text IS NULL
         OR (
           ${filters.addedDateBasis}::text = 'created'
@@ -716,6 +720,10 @@ export async function fetchAdminMuaListPage(
           NOT EXISTS (SELECT 1 FROM mua_regions mr WHERE mr.mua_id = m.id)
           AND m.city = ANY(${regionCities}::text[])
         )
+      )
+      AND (
+        ${filters.sources.length === 0}
+        OR m.source = ANY(${filters.sources}::text[])
       )
       AND (
         ${filters.addedDateBasis}::text IS NULL

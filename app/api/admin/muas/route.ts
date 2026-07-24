@@ -18,7 +18,7 @@ import { mockStore } from "@/lib/mock-store";
 import { normalizeMua, toDbPlanTier } from "@/lib/db-mappers";
 import { resolveMuaRegions, muaMatchesAnyRegion } from "@/lib/mua-region";
 import { lookupRegionsForCity } from "@/lib/mua-city-region";
-import { normalizeMuaSource } from "@/lib/mua-source";
+import { normalizeMuaSource, type MuaSource } from "@/lib/mua-source";
 import { isMuaNotOnPlan } from "@/lib/mua-active-plan";
 import {
   normalizeServiceOfferings,
@@ -94,6 +94,11 @@ export async function GET(request: Request) {
         if (filters.tiers.length && (!m.planTier || !filters.tiers.includes(m.planTier)))
           return false;
         if (!muaMatchesAnyRegion(m, filters.regions)) return false;
+        if (
+          filters.sources.length > 0 &&
+          (!m.source || !filters.sources.includes(m.source as MuaSource))
+        )
+          return false;
         const days = m.planExpiry
           ? Math.ceil((new Date(m.planExpiry).getTime() - Date.now()) / 86400000)
           : null;

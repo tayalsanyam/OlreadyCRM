@@ -1,5 +1,6 @@
 import type { AdminPlanTag } from "@/lib/admin-plan-tag";
 import { parseAdminPlanTag } from "@/lib/admin-plan-tag";
+import { MUA_SOURCE_OPTIONS, type MuaSource } from "@/lib/mua-source";
 import { PLAN_TIER_LABELS, PIPELINE_STAGE_ORDER, type PlanTier, type PipelineStage, type Region } from "@/lib/types";
 
 export type AdminMuaSegment = "potential" | "customer" | "plan_customer";
@@ -13,6 +14,7 @@ export const ADMIN_MUA_PAGE_SIZE_MAX = 100;
 const VALID_REGIONS = new Set<Region>(["north", "east", "west", "south"]);
 const VALID_PLAN_TIERS = new Set<string>(Object.keys(PLAN_TIER_LABELS));
 const VALID_PIPELINE_STAGES = new Set<PipelineStage>(PIPELINE_STAGE_ORDER);
+const VALID_MUA_SOURCES = new Set<string>(MUA_SOURCE_OPTIONS);
 
 export type AdminMuaAddedDateBasis = "created" | "joined";
 
@@ -32,6 +34,7 @@ export type AdminMuaListFilters = {
   page: number;
   pageSize: number;
   regions: Region[];
+  sources: MuaSource[];
   tiers: PlanTier[];
   expiryStatus: AdminMuaExpiryFilter;
   rosterStatus: AdminMuaRosterFilter;
@@ -93,6 +96,10 @@ export function parseAdminMuaListFilters(
   const regions = searchParams
     .getAll("region")
     .filter((r): r is Region => VALID_REGIONS.has(r as Region));
+
+  const sources = searchParams
+    .getAll("source")
+    .filter((s): s is MuaSource => VALID_MUA_SOURCES.has(s));
 
   const tiers = searchParams
     .getAll("tier")
@@ -169,6 +176,7 @@ export function parseAdminMuaListFilters(
     page,
     pageSize,
     regions,
+    sources,
     tiers,
     expiryStatus,
     rosterStatus,

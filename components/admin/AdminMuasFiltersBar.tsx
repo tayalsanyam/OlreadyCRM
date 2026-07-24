@@ -14,6 +14,7 @@ import {
   type AdminPlanTag,
 } from "@/lib/admin-plan-tag";
 import { REGION_OPTIONS } from "@/lib/mua-region";
+import { MUA_SOURCE_OPTIONS, type MuaSource } from "@/lib/mua-source";
 import { mapAssignableStaffFromApi } from "@/lib/sales-pipeline-assignee";
 import { PLAN_TIER_LABELS, type CityRegion, type PlanTier, type Region } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -192,6 +193,8 @@ type AllMuasFiltersProps = {
   onTagChange: (v: AdminPlanTag | "all") => void;
   region: Region[];
   onRegionChange: (v: Region[]) => void;
+  sources: MuaSource[];
+  onSourcesChange: (v: MuaSource[]) => void;
   tier: string;
   onTierChange: (v: string) => void;
   expiryStatus: ExpiryFilter;
@@ -251,6 +254,12 @@ function toggleRegion(list: Region[], value: Region): Region[] {
     : [...list, value];
 }
 
+function toggleSource(list: MuaSource[], value: MuaSource): MuaSource[] {
+  return list.includes(value)
+    ? list.filter((s) => s !== value)
+    : [...list, value];
+}
+
 function formatIsoDate(iso: string): string {
   const [y, m, d] = iso.split("-");
   if (!y || !m || !d) return iso;
@@ -300,6 +309,8 @@ function AllMuasFiltersBar(props: AllMuasFiltersProps) {
     onTagChange,
     region,
     onRegionChange,
+    sources,
+    onSourcesChange,
     tier,
     onTierChange,
     expiryStatus,
@@ -331,6 +342,7 @@ function AllMuasFiltersBar(props: AllMuasFiltersProps) {
     segment === "all" &&
     tag === "all" &&
     region.length === 0 &&
+    sources.length === 0 &&
     !tier &&
     expiryStatus === "all";
 
@@ -370,6 +382,12 @@ function AllMuasFiltersBar(props: AllMuasFiltersProps) {
       pills.push({
         label,
         onRemove: () => onRegionChange(region.filter((x) => x !== r)),
+      });
+    });
+    sources.forEach((s) => {
+      pills.push({
+        label: `Source: ${s}`,
+        onRemove: () => onSourcesChange(sources.filter((x) => x !== s)),
       });
     });
     if (tier) {
@@ -418,6 +436,7 @@ function AllMuasFiltersBar(props: AllMuasFiltersProps) {
     segment,
     tag,
     region,
+    sources,
     tier,
     expiryStatus,
     hasAddedDateFilter,
@@ -428,6 +447,7 @@ function AllMuasFiltersBar(props: AllMuasFiltersProps) {
     onSegmentChange,
     onTagChange,
     onRegionChange,
+    onSourcesChange,
     onTierChange,
     onExpiryChange,
     onRosterStatusChange,
@@ -530,6 +550,20 @@ function AllMuasFiltersBar(props: AllMuasFiltersProps) {
               options={planRmOptions}
               className="max-w-xs"
             />
+          </FilterRow>
+          <FilterRow label="Source">
+            <FilterChip active={sources.length === 0} onClick={() => onSourcesChange([])}>
+              All
+            </FilterChip>
+            {MUA_SOURCE_OPTIONS.map((value) => (
+              <FilterChip
+                key={value}
+                active={sources.includes(value)}
+                onClick={() => onSourcesChange(toggleSource(sources, value))}
+              >
+                {value}
+              </FilterChip>
+            ))}
           </FilterRow>
         </div>
 
