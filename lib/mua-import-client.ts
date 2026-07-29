@@ -1,4 +1,3 @@
-import { apiErrorMessage } from "@/lib/api-json";
 import {
   MUA_IMPORT_CHUNK_PAUSE_MS,
   MUA_IMPORT_CHUNK_SIZE,
@@ -41,7 +40,7 @@ export async function importMuasInChunks(
 
     const json = (await res.json()) as { data: MuaImportChunkResult | null; error?: string | null };
     if (!res.ok || !json.data) {
-      throw new Error(await apiErrorMessage(res, json.error ?? "MUA import failed"));
+      throw new Error(json.error ?? `MUA import failed (${res.status})`);
     }
 
     const chunk = json.data;

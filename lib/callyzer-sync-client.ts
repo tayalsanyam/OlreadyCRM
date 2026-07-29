@@ -4,7 +4,6 @@ import {
   CALLYZER_CHUNK_SIZE,
   CALLYZER_SKIP_IF_SYNCED_WITHIN_MIN,
 } from "@/lib/callyzer-sync-types";
-import { apiErrorMessage } from "@/lib/api-json";
 
 export type CallyzerChunkProgress = {
   processedRecords: number;
@@ -114,7 +113,7 @@ export async function syncCallyzerCalls(
 
     const json = (await res.json()) as { data: CallyzerChunkResult | null; error?: string | null };
     if (!res.ok || !json.data) {
-      throw new Error(await apiErrorMessage(res, json.error ?? "Callyzer sync failed"));
+      throw new Error(json.error ?? `Callyzer sync failed (${res.status})`);
     }
 
     const chunk = json.data;
