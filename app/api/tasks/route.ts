@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { sql, generateTaskDisplayId, withTransaction } from "@/db/index";
+import { sql, withTransaction } from "@/db/index";
+import { runWithTaskDisplayIdRetry } from "@/lib/task-display-id";
 import { requireSession } from "@/lib/api-auth";
 import { USE_MOCK } from "@/lib/mock-data";
 import { mockStore } from "@/lib/mock-store";
@@ -317,7 +318,6 @@ export async function POST(request: Request) {
     }
   }
 
-  const displayId = await generateTaskDisplayId(sql);
   const typeMap: Record<string, string> = {
     follow_up: "follow_up",
     followUp: "follow_up",
@@ -327,21 +327,26 @@ export async function POST(request: Request) {
   };
   const dbType = typeMap[body.taskType] ?? body.taskType;
 
-  const [task] = await sql`
-    INSERT INTO rm_tasks (
-      display_id, staff_id, lead_id, push_id, task_type, title, due_date, status
-    ) VALUES (
-      ${displayId},
-      ${auth.session.userId}::uuid,
-      ${body.leadId}::uuid,
-      ${body.pushId ?? null}::uuid,
-      ${dbType}::task_type,
-      ${body.title},
-      ${body.dueDate ?? null}::date,
-      'pending'
-    )
-    RETURNING *
-  `;
+  const task = await withTransaction(async (tx) => {
+    return runWithTaskDisplayIdRetry(tx, async (displayId) => {
+      const [row] = await tx`
+        INSERT INTO rm_tasks (
+          display_id, staff_id, lead_id, push_id, task_type, title, due_date, status
+        ) VALUES (
+          ${displayId},
+          ${auth.session.userId}::uuid,
+          ${body.leadId}::uuid,
+          ${body.pushId ?? null}::uuid,
+          ${dbType}::task_type,
+          ${body.title},
+          ${body.dueDate ?? null}::date,
+          'pending'
+        )
+        RETURNING *
+      `;
+      return row;
+    });
+  });
 
   return NextResponse.json({ data: task, error: null });
 }
