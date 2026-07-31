@@ -391,8 +391,8 @@ export async function ingestCallyzerCall(
           mua_id = COALESCE(mua_id, ${muaId}::uuid),
           pipeline_id = COALESCE(pipeline_id, ${pipelineId}::uuid),
           contact_type = CASE
-            WHEN contact_type = 'unknown' AND ${leadId}::uuid IS NOT NULL THEN 'lead'::call_contact_type
-            WHEN contact_type = 'unknown' AND ${muaId}::uuid IS NOT NULL THEN 'mua'::call_contact_type
+            WHEN contact_type = 'unknown' AND ${leadId}::uuid IS NOT NULL THEN 'lead'
+            WHEN contact_type = 'unknown' AND ${muaId}::uuid IS NOT NULL THEN 'mua'
             ELSE contact_type
           END
         WHERE callyzer_call_id = ${input.callId}
