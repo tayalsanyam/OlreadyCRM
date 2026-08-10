@@ -117,12 +117,23 @@ export async function processRenewalT30(tx: TransactionSql): Promise<number> {
   for (const row of due) {
     const { planPeriodKey, planHistoryId } = await resolvePlanPeriodKey(tx, row.muaId, row.planExpiry);
 
-    const [existing] = await tx<{ id: string }[]>`
-      SELECT id FROM sales.renewal_attempt
-      WHERE mua_id = ${row.muaId}::uuid AND plan_period_key = ${planPeriodKey}
-      LIMIT 1
+    // Claim the plan period first so concurrent pipeline GETs don't race on convert + insert.
+    const [claimed] = await tx<{ id: string }[]>`
+      INSERT INTO sales.renewal_attempt (
+        mua_id, plan_history_id, plan_period_key, triggered_for_expiry, pipeline_id, outcome
+      )
+      VALUES (
+        ${row.muaId}::uuid,
+        ${planHistoryId}::uuid,
+        ${planPeriodKey},
+        ${row.planExpiry}::date,
+        NULL,
+        'pending'
+      )
+      ON CONFLICT (mua_id, plan_period_key) DO NOTHING
+      RETURNING id
     `;
-    if (existing) continue;
+    if (!claimed) continue;
 
     const assignTo = row.salesClosedBy && row.salespersonActive ? row.salesClosedBy : null;
 
@@ -174,6 +185,10 @@ export async function processRenewalT30(tx: TransactionSql): Promise<number> {
         )
       `;
     } else if (existingPipe) {
+      // Active non-closed pipeline — drop the claim; another flow owns this MUA.
+      await tx`
+        DELETE FROM sales.renewal_attempt WHERE id = ${claimed.id}::uuid
+      `;
       continue;
     } else {
       const [pipeline] = await tx<{ id: string }[]>`
@@ -181,7 +196,12 @@ export async function processRenewalT30(tx: TransactionSql): Promise<number> {
         VALUES (${row.muaId}::uuid, 'renewal', 'Untouched', 'active', ${assignTo}::uuid)
         RETURNING id
       `;
-      if (!pipeline) continue;
+      if (!pipeline) {
+        await tx`
+          DELETE FROM sales.renewal_attempt WHERE id = ${claimed.id}::uuid
+        `;
+        continue;
+      }
       pipelineId = pipeline.id;
       const actorId = await resolveStageLogActor(tx, {
         assignedTo: assignTo,
@@ -201,17 +221,9 @@ export async function processRenewalT30(tx: TransactionSql): Promise<number> {
     }
 
     await tx`
-      INSERT INTO sales.renewal_attempt (
-        mua_id, plan_history_id, plan_period_key, triggered_for_expiry, pipeline_id, outcome
-      )
-      VALUES (
-        ${row.muaId}::uuid,
-        ${planHistoryId}::uuid,
-        ${planPeriodKey},
-        ${row.planExpiry}::date,
-        ${pipelineId}::uuid,
-        'pending'
-      )
+      UPDATE sales.renewal_attempt
+      SET pipeline_id = ${pipelineId}::uuid
+      WHERE id = ${claimed.id}::uuid
     `;
 
     const pipelineRef = `[PIPE:${pipelineId}]`;
