@@ -158,13 +158,18 @@ export async function processRenewalT30(tx: TransactionSql): Promise<number> {
         WHERE id = ${existingPipe.id}::uuid
       `;
       pipelineId = existingPipe.id;
+      const actorId = await resolveStageLogActor(tx, {
+        assignedTo: existingPipe.assignedTo ?? assignTo,
+        salesClosedBy: row.salesClosedBy,
+        salesClosedByActive: row.salespersonActive,
+      });
       await tx`
         INSERT INTO sales.comms_log (pipeline_id, entry_type, description, actor_id, metadata)
         VALUES (
           ${pipelineId}::uuid,
           'stageChanged',
           ${`T-30 — converted Deal Closed pipeline to renewal (${row.daysUntilExpiry}d until expiry)`},
-          NULL,
+          ${actorId}::uuid,
           ${tx.json({ renewalT30: true, convertedFromClosedDeal: true, planExpiry: row.planExpiry, planPeriodKey })}
         )
       `;
@@ -178,13 +183,18 @@ export async function processRenewalT30(tx: TransactionSql): Promise<number> {
       `;
       if (!pipeline) continue;
       pipelineId = pipeline.id;
+      const actorId = await resolveStageLogActor(tx, {
+        assignedTo: assignTo,
+        salesClosedBy: row.salesClosedBy,
+        salesClosedByActive: row.salespersonActive,
+      });
       await tx`
         INSERT INTO sales.comms_log (pipeline_id, entry_type, description, actor_id, metadata)
         VALUES (
           ${pipelineId}::uuid,
           'stageChanged',
           ${`T-30 renewal pipeline created (${row.daysUntilExpiry}d until plan expiry)`},
-          NULL,
+          ${actorId}::uuid,
           ${tx.json({ renewalT30: true, planExpiry: row.planExpiry, planPeriodKey })}
         )
       `;
